@@ -4,7 +4,7 @@
 #include "sx126x.h"
 #include "sx126x_hal.h"
 
-#ifdef RP2040
+#if defined(PICO_RP2040) || defined(PICO_RP2350)
 #include "../common.h"
 #endif
 

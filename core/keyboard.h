@@ -18,7 +18,7 @@
 class KeyBoard
 {
 private:
-    const uint8_t pinId[KEY_COUNT] = {17, 20, 19, 18, 6, 7, 8, 9};
+    const uint8_t pinId[KEY_COUNT] = {16, 17, 20, 21, 26, 27, 8, 9};
     bool prevKeyState[KEY_COUNT];
 public:
     KeyBoard();

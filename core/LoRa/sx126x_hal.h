@@ -62,7 +62,7 @@ extern "C" {
  */
 #define SX126X_NOP ( 0x00 )
 
-#ifndef RP2040
+#if !defined(PICO_RP2040) && !defined(PICO_RP2350)
 #define GPIO_OUT 1
 #define GPIO_IN 0
 #endif
@@ -89,7 +89,7 @@ typedef struct {
     int8_t txen;
     int8_t rxen;
     int baudrate;
-    #ifdef RP2040
+    #if defined(PICO_RP2040) || defined(PICO_RP2350)
     bool spi;
     #endif
 } sx126x_hal_t;

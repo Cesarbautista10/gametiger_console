@@ -25,10 +25,10 @@ SplashScreen::SplashScreen(void (*rcb)(int8_t menu, uint8_t option), void (*hscb
     this->bgLayer = new TileMap(xCount, yCount, tileWidth, tileHeight, ts);
 
     TileInfo tinfo; 
-    tinfo.color = Color(158, 228, 254);
+    tinfo.color = Color(255, 255, 255);
     tinfo.type = COLORFILL;
     this->bgLayer->addTileInfo(1, tinfo);
-    tinfo.color = Color(135, 220, 255);
+    tinfo.color = Color(255, 255, 255);
     this->bgLayer->addTileInfo(2, tinfo);
     printf("[SplashScreen] Done\n");
 }
@@ -60,7 +60,7 @@ void SplashScreen::draw(Display *display) {
     this->bgLayer->draw(display, this->tileMoveX, this->tileMoveY+40);
     uint16_t width = logoSprite.getSpriteWidth(tigerFrame);
     logoSprite.drawSprite(display, tigerFrame, Vec2((DISPLAY_WIDTH - width)/2, 56), this->imageAlpha);
-    std::string title = "GameTiger";
+    std::string title = "devlab";
     width = alphanumfont.getTextWidth(title, 2);
     alphanumfont.drawText(display, title, Vec2((DISPLAY_WIDTH - width)/2, 190), this->imageAlpha, 2);
 }

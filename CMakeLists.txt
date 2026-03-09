@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.12)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
-add_definitions ( -DRP2040=1 )
+set(PICO_PLATFORM rp2350-arm-s CACHE STRING "Pico Platform")
+set(PICO_BOARD pico2 CACHE STRING "Pico Board")
 
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR ARM)
@@ -12,8 +13,6 @@ include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 include($ENV{PICO_EXTRAS_PATH}/external/pico_extras_import.cmake)
 
 project(GameTiger VERSION 1.0.0 LANGUAGES C CXX ASM)
- 
-set(PICO_BOARD gametiger_rp2040)
 
 add_executable(${PROJECT_NAME} 
     core/common.cpp

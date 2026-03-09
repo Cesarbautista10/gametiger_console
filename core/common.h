@@ -46,7 +46,7 @@
 #include "tilemap.h"
 #include "level.h"
 
-#define AUDIO_PIN 5
+#define AUDIO_PIN 23
 
 enum ImageType {INDEXEDCOLORS, PIXELCOLOR};
 enum GameState {WAITING, PLAYING, PAUSED, LOST};

@@ -6,8 +6,8 @@ private:
     const float FULL_BATTERY = 4.25;
     const float EMPTY_BATTERY = 2.54;
 
-    const uint8_t VSYS_PIN = 26;
-    const uint8_t POWER_PIN = 16;
+    const uint8_t VSYS_PIN = 28;
+    const uint8_t POWER_PIN = 22;
 
     uint8_t levelCached = 0;
     uint32_t lastCachedTime = 0;

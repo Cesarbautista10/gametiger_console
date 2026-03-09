@@ -1,6 +1,6 @@
 #include "lora.h"
 
-#ifdef RP2040
+#if defined(PICO_RP2040) || defined(PICO_RP2350)
 #define LogPrintf printf
 #else
 #include <Arduino.h>
@@ -18,7 +18,7 @@ void LogPrintf(const char *format, ...) {
 Lora::Lora() {
     LogPrintf("[Lora] Loading driver...\n");
 
-    #ifdef RP2040
+    #if defined(PICO_RP2040) || defined(PICO_RP2350)
     context.busy = 6;
     context.reset = 0;
     context.nss = 1;
@@ -48,7 +48,7 @@ Lora::Lora() {
 	if(context.rxen != -1)
 	    hal_gpio_init(context.rxen, GPIO_OUT, 0);
 
-    #ifdef RP2040
+    #if defined(PICO_RP2040) || defined(PICO_RP2350)
     context.spi = 0;
     int br = spi_init(context.spi ? spi1 : spi0, context.baudrate);
     printf("[Lora] SX1262 baudrate: %d\n", br);
