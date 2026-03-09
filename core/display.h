@@ -95,6 +95,10 @@ private:
     const uint8_t MOSI_PIN = 3;
     const uint8_t RST_PIN = 4;
     // const uint8_t BL_PIN = 12;
+    
+    // Display offsets for ST7789V2 240x280 (rotado 90° = 280x240)
+    const uint16_t X_OFFSET = 24;
+    const uint16_t Y_OFFSET = 0;
 
     void write_cmd(const uint8_t cmd);
     void write_data(const uint8_t data);

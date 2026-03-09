@@ -3,7 +3,7 @@
 #include "../core/keyboard.h"
 
 #define MINE_BOARD_WIDTH 20
-#define MINE_BOARD_HEIGHT 15
+#define MINE_BOARD_HEIGHT 13
 
 enum STATETYPE {
     CLOSE = 1, 

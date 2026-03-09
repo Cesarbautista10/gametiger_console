@@ -48,7 +48,7 @@ void Display::initSequence() {
     
     this->sendData(ST7789_SLPOUT);
 
-    this->sendData(ST7789_MADCTL, (uint8_t)0x78);  //0xB8 or 0x78 rotation
+    this->sendData(ST7789_MADCTL, (uint8_t)0x68);  // Rotación 90° + BGR
     this->sendData(ST7789_COLMOD, 0x55);
 
     uint8_t buf4[] = {0x0C, 0x0C, 0x00, 0x33, 0x33};
@@ -71,6 +71,7 @@ void Display::initSequence() {
     uint8_t buf8[] = {0xD0, 0x01, 0x05, 0x0A, 0x0B, 0x08, 0x2F, 0x44, 0x41, 0x0A, 0x15, 0x14, 0x19, 0x1D};
     this->sendData(ST7789_NVGAMCTRL, buf8);
 
+    this->sendData(ST7789_INVON);  // Inversión de colores para ST7789V2
     this->sendData(ST7789_DISPON);
 
     this->setWindow(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
@@ -89,10 +90,15 @@ void Display::reset() {
 }
 
 void Display::setWindow(const uint16_t sx, const uint16_t sy, const uint16_t ex, const uint16_t ey){
-    uint8_t buf1[] = {sx >> 8, sx & 0xFF, (ex-1) >> 8, (ex-1) & 0xFF};
+    uint16_t x_start = sx + X_OFFSET;
+    uint16_t y_start = sy + Y_OFFSET;
+    uint16_t x_end = ex + X_OFFSET - 1;
+    uint16_t y_end = ey + Y_OFFSET - 1;
+    
+    uint8_t buf1[] = {x_start >> 8, x_start & 0xFF, x_end >> 8, x_end & 0xFF};
     this->sendData(ST7789_CASET, buf1);
 
-    uint8_t buf2[] = {sy >> 8, sy & 0xFF, (ey-1) >> 8, (ey-1) & 0xFF};
+    uint8_t buf2[] = {y_start >> 8, y_start & 0xFF, y_end >> 8, y_end & 0xFF};
     this->sendData(ST7789_RASET, buf2);
 
     this->sendData(ST7789_RAMWR);

@@ -13,7 +13,7 @@ enum BLOCKTYPE {
 };
 
 #define BOARD_WIDTH 12
-#define BOARD_HEIGHT 20
+#define BOARD_HEIGHT 18
 #define BLOCK_SIZE 4
 #define totalBlockTypes 7
 
