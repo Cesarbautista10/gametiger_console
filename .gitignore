@@ -181,3 +181,8 @@ CMakeFiles/*
 cmake_install.cmake
 CMakeCache.txt
 .gitpod.yml
+
+# CMake dependencies and build tools
+_deps/
+picotool/
+pico_sdk_import.cmake
