@@ -1,5 +1,5 @@
 #include "sx126x_hal.h"
-#ifndef RP2040
+#if !defined(RP2040) && !defined(RP2350)
 #include <Arduino.h>
 #include <SPI.h>
 
@@ -10,7 +10,7 @@
 #endif
 
 void hal_gpio_init(uint8_t pin, uint8_t dir, bool value) {
-    #ifdef RP2040
+    #if defined(RP2040) || defined(RP2350)
     gpio_init(pin);
     gpio_set_dir(pin, dir);
     gpio_put(pin, value);
@@ -21,7 +21,7 @@ void hal_gpio_init(uint8_t pin, uint8_t dir, bool value) {
 }
 
 void hal_gpio_put(uint8_t pin, bool value) {
-    #ifdef RP2040
+    #if defined(RP2040) || defined(RP2350)
     gpio_put(pin, value);
     #else
     digitalWrite(pin, value);
@@ -29,7 +29,7 @@ void hal_gpio_put(uint8_t pin, bool value) {
 }
 
 bool hal_gpio_get(uint8_t pin) {
-    #ifdef RP2040
+    #if defined(RP2040) || defined(RP2350)
     return gpio_get(pin);
     #else
     return digitalRead(pin);
@@ -46,7 +46,7 @@ sx126x_hal_status_t sx126x_hal_write( const void* context, const uint8_t* comman
     memcpy(buffer, command, command_length);
     memcpy(buffer + command_length, data, data_length);
 
-    #ifdef RP2040
+    #if defined(RP2040) || defined(RP2350)
     hal_gpio_put(sx126x_hal->nss, 0);
     spi_write_blocking(sx126x_hal->spi ? spi1 : spi0, buffer, (uint32_t)(command_length + data_length));
     hal_gpio_put(sx126x_hal->nss, 1);
@@ -69,7 +69,7 @@ sx126x_hal_status_t sx126x_hal_read( const void* context, const uint8_t* command
 
     while(hal_gpio_get(sx126x_hal->busy));
 
-    #ifdef RP2040
+    #if defined(RP2040) || defined(RP2350)
     hal_gpio_put(sx126x_hal->nss, 0);
     spi_write_blocking(sx126x_hal->spi ? spi1 : spi0, command, command_length);
     spi_read_blocking(sx126x_hal->spi ? spi1 : spi0, 0, data, data_length);
@@ -111,7 +111,7 @@ sx126x_hal_status_t sx126x_hal_wakeup( const void* context ) {
     hal_gpio_put(sx126x_hal->nss, 0);
 
     const uint8_t wakeup_sequence[2] = {0xC0, 0x00};    // SX126X_GET_STATUS, SX126X_NOP
-    #ifdef RP2040
+    #if defined(RP2040) || defined(RP2350)
     spi_write_blocking(sx126x_hal->spi ? spi1 : spi0, wakeup_sequence, 2);
     #else
     SPI.transfer(0xC0);
