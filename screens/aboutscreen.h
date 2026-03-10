@@ -16,6 +16,7 @@ private:
         {"Programmer", "Harishankar Narayanan"},
         {"Quality", "Mithila Muralidharan", "Naethraa H M", "Prajan H M"},
         {"Hardware", "Raspberry Pi Pico", "Waveshare 2 inch LCD display module", "Pimoroni LiPo SHIM for Pico", "Witty Fox LiIon Battery"},
+        {"Recompilation", "by Unit Electronics", "Project DevLab"},
         {"Thank You", "Remember that you are not alone", "There are others going through the same thing", "By Adam Levine"},
     };
 

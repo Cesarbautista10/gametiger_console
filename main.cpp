@@ -2,6 +2,7 @@
 #include "core/display.h"
 #include "core/battery.h"
 #include "core/keyboard.h"
+#include "core/audio.h"
 #include "core/LoRa/lora.h"
 
 #include "screens/splashscreen.h"
@@ -21,6 +22,7 @@
 
 Screen *screen;
 Lora *lora;
+Audio *audio;
 uint32_t highscores[64];
 bool shouldSwitchScreen;
 uint8_t newScreenId, newOption;
@@ -52,9 +54,16 @@ void backHandler(int8_t menu, uint8_t option) {
 void checkScreenSwitch() {
     if(!shouldSwitchScreen)
         return;
+    
+    printf("[Main] Switching screen - current: %d, new: %d\n", screen->screenId, newScreenId);
+    
+    // Reproducir sonido de cambio de menú
+    if(audio) audio->playMenuSound();
 
+    
     if(screen->screenId == ScreenEnum::MENUSCREEN) {
         delete screen;
+        printf("[Main] From MENU to screen %d\n", newScreenId);
         if(newScreenId == ScreenEnum::SNAKESCREEN)
             screen = new SnakeScreen(*backHandler, *highScoreHandler, highscores[newScreenId], newOption);
         else if(newScreenId == ScreenEnum::GAMEBOYSCREEN)
@@ -74,13 +83,27 @@ void checkScreenSwitch() {
         else if(newScreenId == ScreenEnum::ABOUTSCREEN)
             screen = new AboutScreen(*backHandler, *highScoreHandler, highscores[newScreenId], newOption);
         else
-            printf("[Main] Something failed badly\n");
+            printf("[Main] Something failed badly - unknown screenId: %d\n", newScreenId);
     } else if(screen->screenId == ScreenEnum::SPLASHSCREEN) {
         delete screen;
+        printf("[Main] From SPLASH to MENU\n");
         screen = new MenuScreen(*backHandler, *highScoreHandler, newScreenId, newOption);
     } else {
         delete screen;
-        screen = new MenuScreen(*backHandler, *highScoreHandler, newScreenId-2, newOption);
+        // Convertir screenId de vuelta al índice del menú
+        uint8_t menuIndex = 0;
+        if(newScreenId == ScreenEnum::SNAKESCREEN) menuIndex = 0;
+        else if(newScreenId == ScreenEnum::GAMEBOYSCREEN) menuIndex = 1;
+        else if(newScreenId == ScreenEnum::G2048SCREEN) menuIndex = 2;
+        else if(newScreenId == ScreenEnum::TETRISSCREEN) menuIndex = 3;
+        else if(newScreenId == ScreenEnum::MINESCREEN) menuIndex = 4;
+        else if(newScreenId == ScreenEnum::TICSCREEN) menuIndex = 5;
+        else if(newScreenId == ScreenEnum::PA2SCREEN) menuIndex = 6;
+        else if(newScreenId == ScreenEnum::SETTINGSSCREEN) menuIndex = 7;
+        else if(newScreenId == ScreenEnum::ABOUTSCREEN) menuIndex = 8;
+        
+        printf("[Main] From game %d back to MENU at index %d\n", newScreenId, menuIndex);
+        screen = new MenuScreen(*backHandler, *highScoreHandler, menuIndex, newOption);
     }
     shouldSwitchScreen = false;
 }
@@ -106,6 +129,26 @@ int main(int argc, char *argv[]) {
 
     Battery *battery = new Battery();
     KeyBoard *keyboard = new KeyBoard();
+    audio = new Audio();
+    globalAudio = audio; // Hacer accesible globalmente
+    
+    // Melodía de arranque mejorada - Intro de 8 bits
+    printf("[Main] Playing startup sound...\n");
+    audio->playTone(659, 120);   // Mi
+    sleep_ms(30);
+    audio->playTone(659, 120);   // Mi
+    sleep_ms(30);
+    audio->playTone(659, 120);   // Mi
+    sleep_ms(80);
+    audio->playTone(523, 120);   // Do
+    sleep_ms(30);
+    audio->playTone(659, 180);   // Mi
+    sleep_ms(80);
+    audio->playTone(784, 240);   // Sol
+    sleep_ms(200);
+    audio->playTone(392, 240);   // Sol bajo
+    sleep_ms(300);
+    
     screen = new SplashScreen(*backHandler, *highScoreHandler, 0, 1);
 
     timetype lastUpdate = getTime();

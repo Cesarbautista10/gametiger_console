@@ -1,4 +1,5 @@
 #include "snakescreen.h"
+#include "../core/audio.h"
 
 SnakeScreen::SnakeScreen(void (*rcb)(int8_t menu, uint8_t option), void (*hscb)(uint32_t highscore), uint32_t hs, uint8_t option) {
     printf("[SnakeScreen] loading...");
@@ -34,6 +35,7 @@ void SnakeScreen::moveSnake() {
     newPos[1] += this->DIR_INFO[this->snakeDir][1];
     if(newPos[0] < 0 || newPos[0] >= BOARD_WIDTH || newPos[1] < 0 || newPos[1] >= BOARD_HEIGHT || this->checkSnakeLoop()) {
         this->gameState = LOST;
+        if(globalAudio) globalAudio->playLoseSound();
         return;
     }
 

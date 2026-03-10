@@ -46,7 +46,7 @@ Todos los botones: Activo en BAJO (GND cuando presionado)
 ```
 Amplificador PAM8302A     RP2350
 ┌──────────────┐         ┌───────────┐
-│  Audio IN    ├────────►│  GPIO 5   │  PWM
+│  Audio IN    ├────────►│  GPIO 23  │  PWM
 │  VCC         ├────────►│  3.3V     │
 │  GND         ├────────►│  GND      │
 │              │         └───────────┘
@@ -75,8 +75,7 @@ Divisor de voltaje en VSYS para lectura ADC
 | GPIO | Función | Tipo | Descripción |
 |------|---------|------|-------------|
 | 0-4 | - | - | **LIBRES** |
-| 5 | AUDIO | PWM | Salida de audio |
-| 6-7 | - | - | **LIBRES** |
+| 5-7 | - | - | **LIBRES** |
 | 8 | START | IN | Botón Start (pull-up) |
 | 9 | SELECT | IN | Botón Select (pull-up) |
 | 10-12 | - | - | **LIBRES** |
@@ -90,7 +89,8 @@ Divisor de voltaje en VSYS para lectura ADC
 | 20 | LEFT | IN | D-Pad Izquierda (pull-up) |
 | 21 | RIGHT | IN | D-Pad Derecha (pull-up) |
 | 22 | POWER | IN | Estado de carga |
-| 23-25 | - | - | **LIBRES** |
+| 23 | AUDIO | PWM | Salida de audio (buzzer/amplificador) |
+| 24-25 | - | - | **LIBRES** |
 | 26 | BTN_A | IN | Botón A (pull-up) |
 | 27 | BTN_B | IN | Botón B (pull-up) |
 | 28 | VSYS | ADC | Nivel de batería |
@@ -111,7 +111,7 @@ Divisor de voltaje en VSYS para lectura ADC
 - **Batería Empty:** 2.54V
 
 ### PWM (Audio)
-- **Pin:** GPIO 5
+- **Pin:** GPIO 23
 - **Frecuencia:** Configurable por software
 
 ## 💡 Expansiones Posibles
@@ -148,7 +148,7 @@ Los pines están definidos en:
 - Display: `core/display.h` líneas 92-97
 - Teclado: `core/keyboard.h` línea 21  
 - Batería: `core/battery.h` líneas 9-10
-- Audio: `core/common.h` línea 49
+- Audio: `core/common.h` línea 54 (GPIO 23)
 
 ## 🔄 Configuración de Compilación
 

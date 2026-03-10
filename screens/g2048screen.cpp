@@ -1,4 +1,5 @@
 #include "g2048screen.h"
+#include "../core/audio.h"
 
 /* Board move/combine code is copied from https://github.com/yerzhan7/2048/blob/master/2048/game.cpp */
 

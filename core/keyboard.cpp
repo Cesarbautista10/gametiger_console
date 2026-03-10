@@ -1,4 +1,5 @@
 #include "keyboard.h"
+#include "audio.h"
 
 KeyBoard::KeyBoard() {
     printf("[Keyboard] driver loading...\n");
@@ -22,7 +23,10 @@ void KeyBoard::checkKeyState(Screen *screen) {
         if (this->prevKeyState[i] != keyState) {
             if (keyState) {
                 screen->keyPressed(i);
-                // audio_play_once(snd_drum, sizeof(snd_drum));
+                // Sonido al presionar tecla
+                if (globalAudio) {
+                    globalAudio->playSelectSound();
+                }
             } else
                 screen->keyReleased(i);
         } else if(keyState)

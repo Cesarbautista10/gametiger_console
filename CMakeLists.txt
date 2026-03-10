@@ -26,6 +26,7 @@ add_executable(${PROJECT_NAME}
     core/image.cpp
     core/battery.cpp
     core/keyboard.cpp
+    core/audio.cpp
     core/tilemap.cpp
     core/level.cpp
     core/LoRa/lora.cpp

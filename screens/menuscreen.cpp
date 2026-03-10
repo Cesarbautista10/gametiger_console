@@ -28,10 +28,10 @@ MenuScreen::MenuScreen(void (*rcb)(int8_t menu, uint8_t option), void (*hscb)(ui
     this->bgLayer = new TileMap(xCount, yCount, tileWidth, tileHeight, ts);
 
     TileInfo tinfo; 
-    tinfo.color = Color(253, 201, 48);
+    tinfo.color = Color(0, 0, 0);
     tinfo.type = COLORFILL;
     this->bgLayer->addTileInfo(1, tinfo);
-    tinfo.color = Color(252, 183, 35);
+    tinfo.color = Color(0, 0, 0);
     this->bgLayer->addTileInfo(2, tinfo);
     printf("[MenuScreen] Done\n");
 }

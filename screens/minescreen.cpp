@@ -1,4 +1,5 @@
 #include "minescreen.h"
+#include "../core/audio.h"
 
 MineScreen::MineScreen(void (*rcb)(int8_t menu, uint8_t option), void (*hscb)(uint32_t highscore), uint32_t highscore, uint8_t option) {
     printf("[MineScreen] loading...\n");

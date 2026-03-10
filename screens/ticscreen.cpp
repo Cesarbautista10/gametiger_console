@@ -1,4 +1,5 @@
 #include "ticscreen.h"
+#include "../core/audio.h"
 #include <algorithm> 
 
 TicScreen::TicScreen(void (*rcb)(int8_t menu, uint8_t option), void (*hscb)(uint32_t highscore), uint32_t highscore, uint8_t option) {
@@ -82,8 +83,17 @@ void TicScreen::draw(Display *display) {
 
 bool TicScreen::checkGameOver() {
     won = board.getWinner();
-    if(won != E_TIC)
+    if(won != E_TIC) {
+        // Reproducir sonido según ganador
+        if(globalAudio) {
+            if(won == O_TIC) {
+                globalAudio->playWinSound();  // Jugador ganó
+            } else {
+                globalAudio->playLoseSound(); // Computadora ganó
+            }
+        }
         return true;
+    }
 
     if(!board.isFull())
         return false;

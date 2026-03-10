@@ -1,4 +1,5 @@
 #include "tetrisscreen.h"
+#include "../core/audio.h"
 
 TetrisScreen::TetrisScreen(void (*rcb)(int8_t menu, uint8_t option), void (*hscb)(uint32_t highscore), uint32_t hs, uint8_t option) {
     printf("[TetrisScreen] loading...\n");

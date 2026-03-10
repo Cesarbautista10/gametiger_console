@@ -51,10 +51,12 @@
 #include "tilemap.h"
 #include "level.h"
 
-#define AUDIO_PIN 5
+#define AUDIO_PIN 29
 
 enum ImageType {INDEXEDCOLORS, PIXELCOLOR};
 enum GameState {WAITING, PLAYING, PAUSED, LOST};
+
+class Audio; // Forward declaration
 
 timetype getTime();
 uint16_t getTimeDiffMS(timetype start);
@@ -63,6 +65,7 @@ extern Color BLACKCOLOR;
 extern Color WHITECOLOR;
 extern Color REDCOLOR;
 extern Color GREENCOLOR;
+extern Audio *globalAudio;
 
 extern Image alphanumfont;
 extern Image allGameSprite;
