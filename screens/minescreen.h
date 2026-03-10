@@ -2,8 +2,8 @@
 #include "../core/screen.h"
 #include "../core/keyboard.h"
 
-#define MINE_BOARD_WIDTH 20
-#define MINE_BOARD_HEIGHT 13
+#define MINE_BOARD_WIDTH 24
+#define MINE_BOARD_HEIGHT 15
 
 enum STATETYPE {
     CLOSE = 1, 

@@ -130,9 +130,28 @@ Algunos juegos pueden necesitar ajustes menores en las posiciones de elementos d
 - Revisa que el voltaje sea 3.3V
 - Confirma que el pin RST esté conectado
 
-### Colores incorrectos
-- El formato de color es RGB565
-- Verifica el valor de MADCTL para la rotación correcta
+### Colores incorrectos o invertidos
+El ST7789V2 viene en diferentes variantes de fabricación. Algunos módulos requieren inversión de colores y otros no.
+
+**Solución rápida:**
+1. Edita `core/common.h`
+2. Busca la línea:
+   ```c
+   #define DISPLAY_INVERT_COLORS 1
+   ```
+3. Cambia el valor:
+   - `1` = Inversión activada (ST7789_INVON) - Pantalla que funciona correctamente
+   - `0` = Inversión desactivada (ST7789_INVOFF) - Pantalla que muestra colores invertidos
+
+4. Recompila y flashea:
+   ```bash
+   make -j$(nproc)
+   ./flash_pyocd.sh
+   # o
+   cp GameTiger.uf2 /media/$USER/RPI-RP2/
+   ```
+
+Ver [DISPLAY_COLOR_FIX.md](DISPLAY_COLOR_FIX.md) para más detalles sobre este problema.
 
 ### Pantalla invertida/rotada
 - Ajusta el valor MADCTL en `display.cpp` línea 53

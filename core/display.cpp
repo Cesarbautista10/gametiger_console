@@ -48,7 +48,7 @@ void Display::initSequence() {
     
     this->sendData(ST7789_SLPOUT);
 
-    this->sendData(ST7789_MADCTL, (uint8_t)0x68);  // Rotación 90° + BGR
+    this->sendData(ST7789_MADCTL, (uint8_t)0x68);  // Landscape 90° + BGR
     this->sendData(ST7789_COLMOD, 0x55);
 
     uint8_t buf4[] = {0x0C, 0x0C, 0x00, 0x33, 0x33};
@@ -71,7 +71,13 @@ void Display::initSequence() {
     uint8_t buf8[] = {0xD0, 0x01, 0x05, 0x0A, 0x0B, 0x08, 0x2F, 0x44, 0x41, 0x0A, 0x15, 0x14, 0x19, 0x1D};
     this->sendData(ST7789_NVGAMCTRL, buf8);
 
-    this->sendData(ST7789_INVON);  // Inversión de colores para ST7789V2
+    // Inversión de colores - configurable según el módulo de display
+    #if DISPLAY_INVERT_COLORS
+    this->sendData(ST7789_INVON);   // Inversión activada
+    #else
+    this->sendData(ST7789_INVOFF);  // Inversión desactivada
+    #endif
+    
     this->sendData(ST7789_DISPON);
 
     this->setWindow(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);

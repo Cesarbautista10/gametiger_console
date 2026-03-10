@@ -14,7 +14,7 @@ private:
     
     Color dark = Color(31, 31, 31), light = Color(157, 195, 140);
 
-    const uint8_t BOARD_WIDTH = 26, BOARD_HEIGHT = 18;
+    const uint8_t BOARD_WIDTH = 30, BOARD_HEIGHT = 18;
     std::map<uint8_t, std::array<int8_t, 2> > DIR_INFO = {
         {KEY_UP, {{0, -1}}},
         {KEY_DOWN, {{0, 1}}},

@@ -28,8 +28,13 @@
 #ifndef _GAME_TIGER_COMMON_H
 #define _GAME_TIGER_COMMON_H
 
-#define DISPLAY_WIDTH 280
+#define DISPLAY_WIDTH 320
 #define DISPLAY_HEIGHT 240
+
+// Configuración de display ST7789V2
+// Algunos módulos necesitan inversión de colores, otros no
+// Si los colores se ven invertidos, cambia este valor
+#define DISPLAY_INVERT_COLORS 0 // 1 = INVON activado, 0 = INVOFF activado
 
 #define ENABLE_BATTERY_MONITOR
 
