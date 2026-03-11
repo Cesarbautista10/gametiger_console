@@ -25,20 +25,39 @@ Configuración: Landscape 320×240 (MADCTL=0x68)
 ## 🎮 Botones de Control
 
 ```
-Botón                     RP2350 GPIO   Pull-up
+Botones GPIO              RP2350 GPIO   Pull-up
 ┌──────────────┐         ┌───────────┐  ┌──────┐
-│  D-Pad UP    ├────────►│  GPIO 13  ├──┤ 10kΩ │── VCC
-│  D-Pad DOWN  ├────────►│  GPIO 14  ├──┤ 10kΩ │── VCC
-│  D-Pad LEFT  ├────────►│  GPIO 20  ├──┤ 10kΩ │── VCC
-│  D-Pad RIGHT ├────────►│  GPIO 21  ├──┤ 10kΩ │── VCC
-│              │         │           │  └──────┘
 │  Botón A     ├────────►│  GPIO 26  ├──┤ 10kΩ │── VCC
 │  Botón B     ├────────►│  GPIO 27  ├──┤ 10kΩ │── VCC
 │  START       ├────────►│  GPIO 8   ├──┤ 10kΩ │── VCC
 │  SELECT      ├────────►│  GPIO 9   ├──┤ 10kΩ │── VCC
-└──────────────┘         └───────────┘  
+└──────────────┘         └───────────┘  └──────┘
                                         (Pull-up interno activado)
-Todos los botones: Activo en BAJO (GND cuando presionado)
+Botones GPIO: Activo en BAJO (GND cuando presionado)
+```
+
+### D-Pad I2C (Botonera ADC)
+
+```
+Botonera I2C              RP2350 I2C0
+┌──────────────┐         ┌───────────┐
+│  SDA         ├────────►│  GPIO 24  │  I2C0 SDA (pull-up interno)
+│  SCL         ├────────►│  GPIO 25  │  I2C0 SCL (pull-up interno)
+│  VCC         ├────────►│  3.3V     │
+│  GND         ├────────►│  GND      │
+└──────────────┘         └───────────┘
+
+Dirección I2C: 0x56
+Frecuencia: 100kHz
+Protocolo: CMD (0xD8/0xD9) → STOP → delay 10ms → READ
+ADC: 12 bits (0-4095)
+
+Rangos de voltaje (3.3V referencia):
+- UP:    2150-2550  (~2350, 1.9V)
+- DOWN:     0-200   (~4,    0.0V)
+- LEFT:   600-1000  (~792,  0.6V)
+- RIGHT: 1450-1850  (~1649, 1.3V)
+- NONE:  3900-4095  (~4088, 3.3V)
 ```
 
 ## 🔊 Audio
@@ -79,18 +98,19 @@ Divisor de voltaje en VSYS para lectura ADC
 | 8 | START | IN | Botón Start (pull-up) |
 | 9 | SELECT | IN | Botón Select (pull-up) |
 | 10-12 | - | - | **LIBRES** |
-| 13 | UP | IN | D-Pad Arriba (pull-up) |
-| 14 | DOWN | IN | D-Pad Abajo (pull-up) |
+| 13 | - | - | **LIBRE** (antes D-Pad UP) |
+| 14 | - | - | **LIBRE** (antes D-Pad DOWN) |
 | 15 | CS | OUT | Display Chip Select |
 | 16 | DC | OUT | Display Data/Command |
 | 17 | RST | OUT | Display Reset |
 | 18 | SCK | SPI | Display Clock |
 | 19 | MOSI | SPI | Display Data |
-| 20 | LEFT | IN | D-Pad Izquierda (pull-up) |
-| 21 | RIGHT | IN | D-Pad Derecha (pull-up) |
+| 20 | - | - | **LIBRE** (antes D-Pad LEFT) |
+| 21 | - | - | **LIBRE** (antes D-Pad RIGHT) |
 | 22 | POWER | IN | Estado de carga |
 | 23 | AUDIO | PWM | Salida de audio (buzzer/amplificador) |
-| 24-25 | - | - | **LIBRES** |
+| 24 | SDA | I2C0 | D-Pad I2C Data (botonera @ 0x56) |
+| 25 | SCL | I2C0 | D-Pad I2C Clock (botonera @ 0x56) |
 | 26 | BTN_A | IN | Botón A (pull-up) |
 | 27 | BTN_B | IN | Botón B (pull-up) |
 | 28 | VSYS | ADC | Nivel de batería |
