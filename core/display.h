@@ -89,11 +89,11 @@
 
 class Display {
 private:
-    const uint8_t DC_PIN = 16;
-    const uint8_t CS_PIN = 15;
+    const uint8_t DC_PIN = 14;
+    const uint8_t CS_PIN = 13;
     const uint8_t SCK_PIN = 18;
     const uint8_t MOSI_PIN = 19;
-    const uint8_t RST_PIN = 17;
+    const uint8_t RST_PIN = 15;
     // const uint8_t BL_PIN = 12;
     
     // Display offsets for ST7789V2 240x320 landscape (rotado 90° = 320x240)

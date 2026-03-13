@@ -17,7 +17,7 @@
 #define KEY_COUNT 8
 
 // Dirección I2C de la botonera
-#define DPAD_I2C_ADDR 0x56
+#define DPAD_I2C_ADDR 0x1A
 
 // Rangos ADC para cada botón (12-bit ADC: 0-4095)
 // Mediciones: NONE=4088, DOWN=4, LEFT=792, RIGHT=1649, UP=2349
