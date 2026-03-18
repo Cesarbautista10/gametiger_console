@@ -1,25 +1,26 @@
 # 📌 Pinout Completo - GameTiger RP2350
 
-## 🖥️ Display ST7789V2 240×320 (Modo Landscape 320×240)
+## 🖥️ Display ST7789V2 320×240
 
 ```
 Display ST7789V2          RP2350 GameTiger
 ┌─────────────┐          ┌──────────────┐
 │             │          │              │
-│  DIN (MOSI) ├─────────►│  GPIO 19     │  SPI0 TX
-│  CK  (SCK)  ├─────────►│  GPIO 18     │  SPI0 SCK
-│  CS         ├─────────►│  GPIO 15     │  Chip Select
-│  DC         ├─────────►│  GPIO 16     │  Data/Command
-│  RST        ├─────────►│  GPIO 17     │  Reset
-│  BL         ├─────────►│  3.3V        │  Backlight (directo)
+│  DIN (MOSI) ├─────────►│  GPIO 15     │  SPI1 TX (D4)
+│  CK  (SCK)  ├─────────►│  GPIO 14     │  SPI1 SCK (D5)
+│  CS         ├─────────►│  GPIO 13     │  Chip Select (D6)
+│  DC         ├─────────►│  GPIO 12     │  Data/Command (D7)
+│  RST        ├─────────►│  GPIO 18     │  Reset (D1)
+│  BL         ├─────────►│  3.3V        │  Backlight (directo o GPIO 12)
 │             │          │              │
 │  VCC        ├─────────►│  3.3V        │
 │  GND        ├─────────►│  GND         │
-│  SDA-0      ├─────────►│  GND         │  Forzar modo SPI
 └─────────────┘          └──────────────┘
 
-Resolución física: 240×320 pixels
-Configuración: Landscape 320×240 (MADCTL=0x68)
+Resolución: 320×240 pixels (landscape)
+Interfaz: SPI1 @ 110 MHz
+Color: RGB565 (16-bit, 65K colores)
+Driver: ST7789V2 compatible
 ```
 
 ## 🎮 Botones de Control
@@ -29,8 +30,8 @@ Botones GPIO              RP2350 GPIO   Pull-up
 ┌──────────────┐         ┌───────────┐  ┌──────┐
 │  Botón A     ├────────►│  GPIO 26  ├──┤ 10kΩ │── VCC
 │  Botón B     ├────────►│  GPIO 27  ├──┤ 10kΩ │── VCC
-│  START       ├────────►│  GPIO 8   ├──┤ 10kΩ │── VCC
-│  SELECT      ├────────►│  GPIO 9   ├──┤ 10kΩ │── VCC
+│  START       ├────────►│  GPIO 16  ├──┤ 10kΩ │── VCC
+│  SELECT      ├────────►│  GPIO 17  ├──┤ 10kΩ │── VCC
 └──────────────┘         └───────────┘  └──────┘
                                         (Pull-up interno activado)
 Botones GPIO: Activo en BAJO (GND cuando presionado)
@@ -41,13 +42,13 @@ Botones GPIO: Activo en BAJO (GND cuando presionado)
 ```
 Botonera I2C              RP2350 I2C0
 ┌──────────────┐         ┌───────────┐
-│  SDA         ├────────►│  GPIO 24  │  I2C0 SDA (pull-up interno)
-│  SCL         ├────────►│  GPIO 25  │  I2C0 SCL (pull-up interno)
+│  SDA         ├────────►│  GPIO 8   │  I2C0 SDA (pull-up interno)
+│  SCL         ├────────►│  GPIO 9   │  I2C0 SCL (pull-up interno)
 │  VCC         ├────────►│  3.3V     │
 │  GND         ├────────►│  GND      │
 └──────────────┘         └───────────┘
 
-Dirección I2C: 0x56
+Dirección I2C: 0x1A
 Frecuencia: 100kHz
 Protocolo: CMD (0xD8/0xD9) → STOP → delay 10ms → READ
 ADC: 12 bits (0-4095)
@@ -93,19 +94,31 @@ Divisor de voltaje en VSYS para lectura ADC
 
 | GPIO | Función | Tipo | Descripción |
 |------|---------|------|-------------|
-| 0-4 | - | - | **LIBRES** |
-| 5-7 | - | - | **LIBRES** |
-| 8 | START | IN | Botón Start (pull-up) |
-| 9 | SELECT | IN | Botón Select (pull-up) |
-| 10-12 | - | - | **LIBRES** |
-| 13 | - | - | **LIBRE** (antes D-Pad UP) |
-| 14 | - | - | **LIBRE** (antes D-Pad DOWN) |
-| 15 | CS | OUT | Display Chip Select |
-| 16 | DC | OUT | Display Data/Command |
-| 17 | RST | OUT | Display Reset |
-| 18 | SCK | SPI | Display Clock |
-| 19 | MOSI | SPI | Display Data |
-| 20 | - | - | **LIBRE** (antes D-Pad LEFT) |
+| 0-7 | - | - | **LIBRES** |
+| 8 | I2C0 SDA | I2C | D-Pad I2C Data (pull-up interno) |
+| 9 | I2C0 SCL | I2C | D-Pad I2C Clock (pull-up interno) |
+| 10-11 | - | - | **LIBRES** |
+| 12 | DC | OUT | Display Data/Command (D7) |
+| 13 | CS | OUT | Display Chip Select (D6) |
+| 14 | SCK (SPI1) | OUT | Display SPI Clock (D5) |
+| 15 | MOSI (SPI1) | OUT | Display SPI TX (D4) |
+| 16 | START | IN | Botón Start (pull-up interno, activo LOW) |
+| 17 | SELECT | IN | Botón Select (pull-up interno, activo LOW) |
+| 18 | RST | OUT | Display Reset (D1) |
+| 19-21 | - | - | **LIBRES** |
+| 22 | CHG_STAT | IN | Estado de carga batería |
+| 23 | AUDIO_PWM | OUT | PWM para amplificador PAM8302A |
+| 24-25 | - | - | **LIBRES** |
+| 26 | BTN_A | IN | Botón A (pull-up interno, activo LOW) |
+| 27 | BTN_B | IN | Botón B (pull-up interno, activo LOW) |
+| 28 | ADC_VSYS | ADC | Medición voltaje batería (ADC2) |
+| 29 | - | - | **LIBRE** |
+
+### Notas:
+- **D-Pad (UP/DOWN/LEFT/RIGHT)**: Controlado via I2C (GPIO 8/9) en dirección 0x1A
+- **Botones activo LOW**: Conectar botón entre GPIO y GND (presionado = LOW)
+- **Pull-ups**: Todos los botones GPIO usan resistencias pull-up internas activadas
+- **SPI Display**: SPI1 @ 110 MHz para pantalla ST7789V2
 | 21 | - | - | **LIBRE** (antes D-Pad RIGHT) |
 | 22 | POWER | IN | Estado de carga |
 | 23 | AUDIO | PWM | Salida de audio (buzzer/amplificador) |

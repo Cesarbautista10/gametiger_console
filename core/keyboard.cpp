@@ -8,8 +8,10 @@ KeyBoard::KeyBoard() {
     i2c_device_init();
     i2c_enabled = true;
     i2c_error_count = 0;
+    i2c_success_count = 0;
     last_i2c_check = 0;
     last_i2c_retry = 0;
+    last_health_check = 0;
     
     // Inicializar estados previos
     for (uint8_t i = 0; i < KEY_COUNT; i++)
@@ -61,50 +63,70 @@ void KeyBoard::checkI2CDPad(Screen *screen) {
     if (!i2c_enabled) {
         uint32_t elapsed = now - last_i2c_retry;
         if (elapsed > 2000) {  // 2 segundos
-            printf("[Keyboard] Attempting reconnection (elapsed: %u ms)...\n", elapsed);
+            printf("[Keyboard] Attempting I2C reconnection (elapsed: %u ms)...\n", elapsed);
             
-            // PRIMERO: Reset completo del hardware I2C
+            // PASO 1: Reset completo del hardware I2C
             i2c_deinit(i2c0);
             sleep_ms(100);
             i2c_device_init();
-            sleep_ms(50);
+            sleep_ms(100);
             
-            // SEGUNDO: Hacer scan para verificar que el dispositivo esté presente
-            printf("[Keyboard] Scanning I2C bus for device 0x56...\n");
-            uint8_t dummy = 0;
-            int scan_result = i2c_write_blocking(i2c0, DPAD_I2C_ADDR, &dummy, 1, false);
+            // PASO 2: Escanear bus I2C para verificar dispositivo
+            printf("[Keyboard] Scanning I2C bus for device 0x%02X...\n", DPAD_I2C_ADDR);
+            bool device_found = false;
+            
+            // Intentar detectar dispositivo con write de 0 bytes
+            int scan_result = i2c_write_blocking(i2c0, DPAD_I2C_ADDR, NULL, 0, false);
             
             if (scan_result >= 0) {
-                printf("[Keyboard] Device found! Reconnected successfully\n");
-                
-                // Resetear contadores
-                i2c_error_count = 0;
-                i2c_enabled = true;
-                last_i2c_check = now;
+                printf("[Keyboard] Device detected on bus!\n");
+                device_found = true;
+            } else {
+                // Intentar método alternativo: write con dummy byte
+                uint8_t dummy = 0;
+                scan_result = i2c_write_blocking(i2c0, DPAD_I2C_ADDR, &dummy, 1, false);
+                if (scan_result >= 0) {
+                    printf("[Keyboard] Device detected (alt method)!\n");
+                    device_found = true;
+                }
+            }
+            
+            // PASO 3: Intentar lectura real si dispositivo fue detectado
+            if (device_found) {
+                sleep_ms(50);
+                uint16_t test_value = 0;
+                if (readADC_Full(DPAD_I2C_ADDR, &test_value)) {
+                    printf("[Keyboard] I2C reconnected successfully! ADC test: %d\n", test_value);
+                    i2c_error_count = 0;
+                    i2c_enabled = true;
+                    last_i2c_check = now;
+                } else {
+                    printf("[Keyboard] Device found but ADC read failed, will retry...\n");
+                }
             } else {
                 printf("[Keyboard] Device not found (ret=%d), will retry...\n", scan_result);
             }
             
-            last_i2c_retry = now;  // Actualizar retry time independientemente del resultado
+            last_i2c_retry = now;
         }
         return;
     }
     
-    // Solo verificar cada 10ms para reducir carga I2C
-    if (now - last_i2c_check < 10) {
+    // Solo verificar cada 20ms para reducir carga I2C y dar tiempo al dispositivo
+    if (now - last_i2c_check < 20) {
         return;
     }
     last_i2c_check = now;
     
-    // Si hubo muchos errores, desactivar temporalmente
-    if (i2c_error_count > 5) {
+    // Si hubo muchos errores consecutivos, desactivar temporalmente
+    if (i2c_error_count > 10) {  // Aumentado de 5 a 10 para ser más tolerante
         if (i2c_enabled) {
             printf("[Keyboard] I2C disabled due to errors (count: %d)\n", i2c_error_count);
-            printf("[Keyboard] Will retry in 2 seconds...\n");
+            printf("[Keyboard] Will retry reconnection in 2 seconds...\n");
             i2c_enabled = false;
-            last_i2c_retry = now;  // Iniciar temporizador de retry
+            last_i2c_retry = now;
         }
-        // Liberar todos los botones
+        // Liberar todos los botones del D-Pad
         for (uint8_t i = KEY_UP; i <= KEY_RIGHT; i++) {
             if (this->prevKeyState[i]) {
                 screen->keyReleased(i);
@@ -118,10 +140,27 @@ void KeyBoard::checkI2CDPad(Screen *screen) {
     
     // Leer valor ADC completo (12-bit) desde la botonera I2C
     if (readADC_Full(DPAD_I2C_ADDR, &adc_value)) {
-        if (i2c_error_count > 0) {
-            printf("[Keyboard] I2C recovered, error count was: %d\n", i2c_error_count);
+        i2c_success_count++;
+        
+        // Si nos recuperamos de errores, notificar y hacer reset completo
+        if (i2c_error_count > 3) {
+            printf("[Keyboard] I2C recovered after %d errors (%u successful reads)\n", 
+                   i2c_error_count, i2c_success_count);
         }
         i2c_error_count = 0; // Reset contador de errores en lectura exitosa
+        
+        // Health check cada 10 segundos: Si hay muchos errores acumulados, reiniciar preventivamente
+        if ((now - last_health_check) > 10000) {
+            if (i2c_success_count < 100) {  // Menos de 100 lecturas exitosas en 10 seg es bajo
+                printf("[Keyboard] I2C health check: Low success rate, preventive restart...\n");
+                i2c_deinit(i2c0);
+                sleep_ms(50);
+                i2c_device_init();
+                sleep_ms(50);
+            }
+            last_health_check = now;
+            i2c_success_count = 0;  // Reset contador para próximo período
+        }
         
         // Debug: imprimir valor ADC solo cuando cambia significativamente
         static uint16_t last_adc_debug = 0;
@@ -165,7 +204,11 @@ void KeyBoard::checkI2CDPad(Screen *screen) {
         }
     } else {
         i2c_error_count++;
-        // No imprimir errores para evitar spam
+        
+        // Log solo cada ciertos errores para evitar spam
+        if (i2c_error_count == 1 || i2c_error_count == 5 || i2c_error_count % 10 == 0) {
+            printf("[Keyboard] I2C read failed (error count: %d)\n", i2c_error_count);
+        }
         
         // Si falla la lectura I2C, marcar como no presionado
         for (uint8_t i = KEY_UP; i <= KEY_RIGHT; i++) {

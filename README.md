@@ -6,7 +6,14 @@
 </p>
 
 ## About GameTiger Console
-A retro-themed gaming console, crafted and tailored exclusively for educational enjoyment. The console boasts a custom-designed printed circuit board (PCB), meticulously created entirely from the ground up, and is centered around the remarkable RP2040 MCU chip. The primary objective of this endeavor is to maintain complete openness, facilitating the exploration of electronic PCB design and the establishment of a platform that fosters the creation of games and emulators on microcontrollers.
+A retro-themed gaming console, crafted and tailored exclusively for educational enjoyment. The console boasts a custom-designed printed circuit board (PCB), meticulously created entirely from the ground up, and is centered around the remarkable **RP2350** MCU chip (ARM Cortex-M33 dual-core @ 150MHz). The primary objective of this endeavor is to maintain complete openness, facilitating the exploration of electronic PCB design and the establishment of a platform that fosters the creation of games and emulators on microcontrollers.
+
+### Hardware Specifications
+- **MCU**: RP2350 (Raspberry Pi Pico 2)
+- **Display**: ST7789V2 LCD 320×240 pixels (1.69" diagonal)
+- **Audio**: PAM8302A Class-D Amplifier
+- **Battery**: Li-Po with charging circuit
+- **Input**: D-Pad via I2C ADC + 4 GPIO buttons (A, B, Start, Select)
 
 <div style="display: flex; justify-content: space-between;">
     <img src="./docs/images/gametiger-gameboy.jpeg" alt="GameTiger Console" width="48%">
@@ -20,8 +27,21 @@ A retro-themed gaming console, crafted and tailored exclusively for educational 
 | ![Snake Game GameTiger Console](/docs/images/Snake.gif) | ![2048 Game GameTiger Console](/docs/images/2048.gif) 
 | Tetris | Minesweeper |
 | ![Tetris Game GameTiger Console](/docs/images/Tetris.gif) | ![Minesweeper Game GameTiger Console](/docs/images/Minesweeper.gif)
-| Tic Tac Toe | Ninja Frog |
+| Tic Tac Toe | Pixel Adventure 2 (Ninja Frog) |
 | ![Tic Tac Toe Game GameTiger Console](/docs/images/TicTacToe.gif) | ![Ninja Frog Game GameTiger Console](/docs/images/NinjaFrog.gif)
+
+### All Available Games
+- **Snake** - Classic snake game with high score tracking
+- **2048** - Puzzle game combining numbered tiles
+- **Tetris** - Block stacking puzzle game
+- **Minesweeper** - Logic-based mine detection game
+- **Tic Tac Toe** - Two-player strategy game
+- **Pixel Adventure 2** - Platformer with Ninja Frog character
+- **GameBoy Emulator** - Play GameBoy ROMs (experimental)
+
+The menu also includes:
+- **Settings** - Display brightness, sleep timer configuration
+- **About** - Project information
 
 ## Software
 The software is constructed using the Pico C++ SDK, incorporating essential hardware interfacing functionalities. As an illustration, the well-known Snake game is already available. The following modules are currently available and are continually being developed.

@@ -22,19 +22,19 @@ void i2c_device_init() {
 // ═══════════════════════════════════════════════════════════
 
 bool sendCommand(uint8_t address, uint8_t cmd) {
-  int result = i2c_write_blocking_until(I2C_PORT, address, &cmd, 1, false, make_timeout_time_ms(10));
+  int result = i2c_write_blocking_until(I2C_PORT, address, &cmd, 1, false, make_timeout_time_ms(50));
   return (result == 1);
 }
 
 bool sendCommandAndRead(uint8_t address, uint8_t cmd, uint8_t* response) {
-  // Enviar comando con STOP y timeout
-  absolute_time_t timeout = make_timeout_time_ms(5);
+  // Enviar comando con STOP y timeout aumentado
+  absolute_time_t timeout = make_timeout_time_ms(50);
   int ret_write = i2c_write_blocking_until(I2C_PORT, address, &cmd, 1, false, timeout);
   if (ret_write == 1) {
-    sleep_ms(10);  // Delay para que slave procese (como Arduino)
+    sleep_ms(15);  // Delay aumentado para que slave procese
     
-    // Leer respuesta con timeout
-    timeout = make_timeout_time_ms(5);
+    // Leer respuesta con timeout aumentado
+    timeout = make_timeout_time_ms(50);
     int ret_read = i2c_read_blocking_until(I2C_PORT, address, response, 1, false, timeout);
     return (ret_read == 1);
   }
@@ -134,12 +134,23 @@ bool readADC_I2C(uint8_t address, uint8_t* scaled) {
 bool readADC_Full(uint8_t address, uint16_t* value) {
   // Lectura usando comandos HSB y LSB separados
   uint8_t hsb, lsb;
-  if (readADC_HSB(address, &hsb) && readADC_LSB(address, &lsb)) {
-    // Combinar bytes y aplicar máscara de 12 bits (ADC de 12 bits = 0-4095)
-    *value = (((uint16_t)hsb << 8) | lsb) & 0x0FFF;
-    return true;
+  
+  // Leer byte alto (HSB)
+  if (!readADC_HSB(address, &hsb)) {
+    return false;
   }
-  return false;
+  
+  // Pequeño delay entre lecturas para dar tiempo al dispositivo
+  sleep_ms(5);
+  
+  // Leer byte bajo (LSB)
+  if (!readADC_LSB(address, &lsb)) {
+    return false;
+  }
+  
+  // Combinar bytes y aplicar máscara de 12 bits (ADC de 12 bits = 0-4095)
+  *value = (((uint16_t)hsb << 8) | lsb) & 0x0FFF;
+  return true;
 }
 
 // ═══════════════════════════════════════════════════════════

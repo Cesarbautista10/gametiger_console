@@ -36,12 +36,14 @@ class KeyBoard
 {
 private:
     // Pines GPIO solo para A, B, START, SELECT (los otros 4 son I2C/ADC)
-    const uint8_t pinId[KEY_COUNT] = {0, 0, 0, 0, 26, 27, 8, 9};
+    const uint8_t pinId[KEY_COUNT] = {0, 0, 0, 0, 26, 27, 16, 17};
     bool prevKeyState[KEY_COUNT];
     bool i2c_enabled;
     uint8_t i2c_error_count;
+    uint32_t i2c_success_count;      // Contador de lecturas exitosas
     uint32_t last_i2c_check;
-    uint32_t last_i2c_retry;  // Timestamp del último intento de reconexión
+    uint32_t last_i2c_retry;         // Timestamp del último intento de reconexión
+    uint32_t last_health_check;      // Timestamp del último health check
 public:
     KeyBoard();
     ~KeyBoard();

@@ -5,9 +5,11 @@
 ### Microcontrolador y Memoria
 | Cantidad | Componente | Descripción | Encapsulado |
 |----------|-----------|-------------|-------------|
-| 1 | **RP2040** | Microcontrolador dual-core ARM Cortex-M0+ @ 133MHz | QFN-56 |
-| 1 | **W25Q128JVS** | Memoria Flash SPI 128Mb (16MB) | SOIC-8 |
-| 1 | **Cristal 12MHz** | Cristal para RP2040 con pads GND | SMD |
+| 1 | **RP2350** | Microcontrolador dual-core ARM Cortex-M33 @ 150MHz | QFN-60 |
+| 1 | **W25Q128JVS** (opcional) | Memoria Flash SPI 128Mb (16MB) - RP2350 tiene 4MB interna | SOIC-8 |
+| 1 | **Cristal 12MHz** | Cristal para RP2350 con pads GND | SMD |
+
+**Nota**: El RP2350 incluye 520KB SRAM y 4MB de flash QPI interna, por lo que la flash externa es opcional dependiendo de los requisitos del proyecto.
 
 ### Reguladores de Voltaje
 | Cantidad | Componente | Descripción | Especificaciones |
@@ -32,7 +34,7 @@
 ### Pantalla
 | Cantidad | Componente | Descripción | Especificaciones |
 |----------|-----------|-------------|------------------|
-| 1 | **Display LCD ST7789V2** | Pantalla TFT a color | 1.69", 240×280, SPI |
+| 1 | **Display LCD ST7789V2** | Pantalla TFT a color | 1.69"-2.0", 320×240, SPI, RGB565 |
 
 ### Botones e Interruptores
 | Cantidad | Componente | Descripción | Tipo |

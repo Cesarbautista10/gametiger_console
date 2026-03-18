@@ -10,8 +10,8 @@
 
 // Configuración I2C para Pico SDK
 #define I2C_PORT i2c0
-#define I2C_SDA 24
-#define I2C_SCL 25
+#define I2C_SDA 8
+#define I2C_SCL 9
 #define I2C_FREQ 100000  // 100kHz
 
 // Variables globales para tracking de dispositivos

@@ -1,20 +1,26 @@
-# Cambios para Display ST7789V2 240×280
+# Display ST7789V2 - GameTiger Console
 
-Este documento describe los cambios realizados para adaptar GameTiger al nuevo display ST7789V2 de 1.69" con resolución 240×280 píxeles.
+Este documento describe la configuración del display ST7789V2 usado en GameTiger Console con RP2350.
 
-## 🔧 Cambios Realizados
+## 📺 Especificaciones del Display
 
-### 1. Configuración de Resolución
+| Característica | Valor |
+|---------------|-------|
+| **Controlador** | ST7789V2 |
+| **Resolución** | 320×240 píxeles (landscape) |
+| **Tamaño** | 1.69" - 2.0" diagonal |
+| **Interfaz** | SPI1 @ 110 MHz |
+| **Voltaje** | 3.3V |
+| **Color** | RGB565 (16-bit, 65K colores) |
+
+## 🔧 Configuración Actual
+
+### Resolución
 **Archivo:** `core/common.h`
 
 ```cpp
-// Antes (Display original 320×240)
 #define DISPLAY_WIDTH 320
 #define DISPLAY_HEIGHT 240
-
-// Ahora (Display ST7789V2 240×280)
-#define DISPLAY_WIDTH 240
-#define DISPLAY_HEIGHT 280
 ```
 
 ### 2. Driver Compatible
@@ -52,32 +58,57 @@ El firmware compilado se generará como `GameTiger.uf2` (aprox. 1.2MB).
 
 ## 🔌 Conexiones del Display
 
-El display ST7789V2 tiene los siguientes pines (DIN, CK, CS, DC, RST, BL):
+El display ST7789V2 se conecta al RP2350 mediante SPI1:
 
-| Pin Display | Pin RP2040 | Función | Definido en código |
+| Pin Display | Pin RP2350 | Función | Definido en código |
 |------------|-----------|---------|-------------------|
-| **DIN** (MOSI) | **GPIO 3** | SPI Data In | `MOSI_PIN = 3` |
-| **CK** (SCK) | **GPIO 2** | SPI Clock | `SCK_PIN = 2` |
-| **CS** | **GPIO 1** | Chip Select | `CS_PIN = 1` |
-| **DC** | **GPIO 0** | Data/Command | `DC_PIN = 0` |
-| **RST** | **GPIO 4** | Reset | `RST_PIN = 4` |
-| **BL** | GPIO 12 (opcional) | Backlight | `BL_PIN = 12` (comentado) |
+| **DIN** (MOSI) | **GPIO 15** | SPI1 TX (D4) | `MOSI_PIN = 15` |
+| **CK** (SCK) | **GPIO 14** | SPI1 Clock (D5) | `SCK_PIN = 14` |
+| **CS** | **GPIO 13** | Chip Select (D6) | `CS_PIN = 13` |
+| **DC** | **GPIO 12** | Data/Command (D7) | `DC_PIN = 12` |
+| **RST** | **GPIO 18** | Reset (D1) | `RST_PIN = 18` |
+| **BL** | 3.3V o GPIO 12 | Backlight | Opcional, comentado en código |
 | **VCC** | **3.3V** | Alimentación | - |
 | **GND** | **GND** | Tierra | - |
 
-### Notas sobre Backlight (BL)
-El pin de backlight está actualmente **deshabilitado** en el código. Si tu display requiere control de brillo:
+**Archivo de configuración**: `core/display.h` (líneas 108-112)
 
-1. Conecta BL a **GPIO 12**
+### Notas sobre Backlight (BL)
+El pin de backlight está actualmente **deshabilitado** en el código para ahorrar un GPIO. Opciones:
+
+**Opción 1**: Conecta **BL directamente a 3.3V** para máximo brillo constante (recomendado).
+
+**Opción 2**: Si necesitas control PWM de brillo:
+1. Define un GPIO disponible (ej: GPIO 11)
 2. Descomenta las líneas en `core/display.cpp`:
    ```cpp
-   // Líneas 23-25 y 138
+   // Líneas 23-25
+   const uint8_t BL_PIN = 11;
    gpio_init(BL_PIN);
    gpio_set_dir(BL_PIN, GPIO_OUT);
    gpio_put(BL_PIN, 1);
    ```
 
-O simplemente conecta **BL directamente a 3.3V** para máximo brillo constante.
+## 🔨 Compilación
+
+### Usando build script
+```bash
+./build.sh
+```
+
+### Compilación manual
+```bash
+export PICO_SDK_PATH=$(pwd)/pico-sdk
+export PICO_EXTRAS_PATH=$(pwd)/pico-extras
+export PICO_TOOLCHAIN_PATH=/usr
+
+mkdir -p build
+cd build
+cmake ..
+make -j$(nproc)
+```
+
+El firmware se genera como `build/GameTiger.uf2` (~1.2MB).
 
 ## 📦 Flashear el Firmware
 
