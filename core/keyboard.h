@@ -45,6 +45,8 @@ private:
     uint32_t last_i2c_check;
     uint32_t last_i2c_retry;         // Timestamp del último intento de reconexión
     uint32_t last_health_check;      // Timestamp del último health check
+    int8_t dpad_debounce_btn;        // Botón detectado en lectura anterior (-1=NONE)
+    uint8_t dpad_debounce_count;     // Lecturas consecutivas del mismo botón
 public:
     KeyBoard();
     ~KeyBoard();

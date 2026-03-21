@@ -12,6 +12,8 @@ KeyBoard::KeyBoard() {
     last_i2c_check = 0;
     last_i2c_retry = 0;
     last_health_check = 0;
+    dpad_debounce_btn = -1;
+    dpad_debounce_count = 0;
     
     // Inicializar estados previos
     for (uint8_t i = 0; i < KEY_COUNT; i++)
@@ -171,16 +173,30 @@ void KeyBoard::checkI2CDPad(Screen *screen) {
         }
         
         // Determinar qué botón está presionado basándose en rangos ADC
-        bool keyStates[4] = {false, false, false, false};
+        int8_t detected_btn = -1;  // -1 = NONE
         
         if (adc_value >= ADC_RANGE_UP_MIN && adc_value <= ADC_RANGE_UP_MAX) {
-            keyStates[KEY_UP] = true;
+            detected_btn = KEY_UP;
         } else if (adc_value >= ADC_RANGE_DOWN_MIN && adc_value <= ADC_RANGE_DOWN_MAX) {
-            keyStates[KEY_DOWN] = true;
+            detected_btn = KEY_DOWN;
         } else if (adc_value >= ADC_RANGE_LEFT_MIN && adc_value <= ADC_RANGE_LEFT_MAX) {
-            keyStates[KEY_LEFT] = true;
+            detected_btn = KEY_LEFT;
         } else if (adc_value >= ADC_RANGE_RIGHT_MIN && adc_value <= ADC_RANGE_RIGHT_MAX) {
-            keyStates[KEY_RIGHT] = true;
+            detected_btn = KEY_RIGHT;
+        }
+        
+        // Debounce: requiere 2 lecturas consecutivas iguales
+        if (detected_btn == dpad_debounce_btn) {
+            if (dpad_debounce_count < 255) dpad_debounce_count++;
+        } else {
+            dpad_debounce_btn = detected_btn;
+            dpad_debounce_count = 1;
+        }
+        
+        // Solo aplicar estado si hay al menos 2 lecturas consecutivas
+        bool keyStates[4] = {false, false, false, false};
+        if (dpad_debounce_count >= 2 && detected_btn >= 0) {
+            keyStates[detected_btn] = true;
         }
         
         // Procesar cambios de estado para cada tecla direccional
