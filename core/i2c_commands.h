@@ -37,16 +37,19 @@
 #define RESP_PA4_DIGITAL   0x09   // Respuesta PA4 digital
 
 // ═══════════════════════════════════════════════════════════
-//           COMANDOS ADC PA0 (12-bit)
+//           COMANDOS ADC (12-bit)
 // ═══════════════════════════════════════════════════════════
-#define CMD_ADC_PA0_HSB    0xD8   // Leer ADC PA0 - HSB (bits 11-8)
-#define CMD_ADC_PA0_LSB    0xD9   // Leer ADC PA0 - LSB (bits 7-0)
-#define CMD_ADC_PA0_I2C    0xDA   // Leer ADC PA0 escalado a dirección I2C (7-bit)
+// PA0 ADC Commands
+#define CMD_ADC_PA0_HSB    0x56   // Leer ADC PA0 - HSB (bits 11-8)
+#define CMD_ADC_PA0_LSB    0x57   // Leer ADC PA0 - LSB (bits 7-0)
+
+// PA1 ADC Commands
+#define CMD_ADC_PA1_HSB    0xD8   // Leer ADC PA1 - HSB (bits 11-8)
+#define CMD_ADC_PA1_LSB    0xD9   // Leer ADC PA1 - LSB (bits 7-0)
 
 // Códigos de respuesta ADC
 #define RESP_ADC_HSB       0x0D   // ADC HSB enviado (bits 11-8)
 #define RESP_ADC_LSB       0x0E   // ADC LSB enviado (bits 7-0)
-#define RESP_ADC_I2C       0x0F   // ADC escalado a dirección I2C enviado
 
 // ═══════════════════════════════════════════════════════════
 //           COMANDOS I2C ADDRESS MANAGEMENT

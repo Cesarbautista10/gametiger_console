@@ -80,7 +80,6 @@ bool pwm100(uint8_t address);
 bool readPA0Digital(uint8_t address, uint8_t* state);
 bool readADC_HSB(uint8_t address, uint8_t* hsb);
 bool readADC_LSB(uint8_t address, uint8_t* lsb);
-bool readADC_I2C(uint8_t address, uint8_t* scaled);
 bool readADC_Full(uint8_t address, uint16_t* value);
 
 // ═══════════════════════════════════════════════════════════

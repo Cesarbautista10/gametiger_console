@@ -112,14 +112,14 @@ void KeyBoard::checkI2CDPad(Screen *screen) {
         return;
     }
     
-    // Solo verificar cada 20ms para reducir carga I2C y dar tiempo al dispositivo
-    if (now - last_i2c_check < 20) {
+    // Solo verificar cada 30ms para reducir carga I2C y dar tiempo al dispositivo
+    if (now - last_i2c_check < 30) {
         return;
     }
     last_i2c_check = now;
     
     // Si hubo muchos errores consecutivos, desactivar temporalmente
-    if (i2c_error_count > 10) {  // Aumentado de 5 a 10 para ser más tolerante
+    if (i2c_error_count > 30) {
         if (i2c_enabled) {
             printf("[Keyboard] I2C disabled due to errors (count: %d)\n", i2c_error_count);
             printf("[Keyboard] Will retry reconnection in 2 seconds...\n");
@@ -142,12 +142,13 @@ void KeyBoard::checkI2CDPad(Screen *screen) {
     if (readADC_Full(DPAD_I2C_ADDR, &adc_value)) {
         i2c_success_count++;
         
-        // Si nos recuperamos de errores, notificar y hacer reset completo
+        // Si nos recuperamos de errores, notificar
         if (i2c_error_count > 3) {
             printf("[Keyboard] I2C recovered after %d errors (%u successful reads)\n", 
                    i2c_error_count, i2c_success_count);
         }
-        i2c_error_count = 0; // Reset contador de errores en lectura exitosa
+        // Decrementar errores gradualmente (más tolerante a errores esporádicos)
+        if (i2c_error_count > 0) i2c_error_count--;
         
         // Health check cada 10 segundos: Si hay muchos errores acumulados, reiniciar preventivamente
         if ((now - last_health_check) > 10000) {

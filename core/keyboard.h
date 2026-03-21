@@ -17,19 +17,20 @@
 #define KEY_COUNT 8
 
 // Dirección I2C de la botonera
-#define DPAD_I2C_ADDR 0x1A
+#define DPAD_I2C_ADDR 0x53
 
 // Rangos ADC para cada botón (12-bit ADC: 0-4095)
-// Mediciones: NONE=4088, DOWN=4, LEFT=792, RIGHT=1649, UP=2349
-#define ADC_RANGE_UP_MIN      2150
-#define ADC_RANGE_UP_MAX      2550
-#define ADC_RANGE_DOWN_MIN    0
-#define ADC_RANGE_DOWN_MAX    200
-#define ADC_RANGE_LEFT_MIN    600
-#define ADC_RANGE_LEFT_MAX    1000
-#define ADC_RANGE_RIGHT_MIN   1450
-#define ADC_RANGE_RIGHT_MAX   1850
-#define ADC_RANGE_NONE_MIN    3900
+// Mediciones PA0: UP=0, RIGHT=1073, LEFT=1950, DOWN=2655, NONE=4067
+// Rangos ampliados usando puntos medios para tolerar ruido ADC
+#define ADC_RANGE_UP_MIN      0
+#define ADC_RANGE_UP_MAX      500
+#define ADC_RANGE_RIGHT_MIN   600
+#define ADC_RANGE_RIGHT_MAX   1500
+#define ADC_RANGE_LEFT_MIN    1550
+#define ADC_RANGE_LEFT_MAX    2350
+#define ADC_RANGE_DOWN_MIN    2400
+#define ADC_RANGE_DOWN_MAX    3300
+#define ADC_RANGE_NONE_MIN    3500
 #define ADC_RANGE_NONE_MAX    4095
 
 class KeyBoard

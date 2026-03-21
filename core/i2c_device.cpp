@@ -27,14 +27,14 @@ bool sendCommand(uint8_t address, uint8_t cmd) {
 }
 
 bool sendCommandAndRead(uint8_t address, uint8_t cmd, uint8_t* response) {
-  // Enviar comando con STOP y timeout aumentado
-  absolute_time_t timeout = make_timeout_time_ms(50);
+  // Enviar comando con STOP
+  absolute_time_t timeout = make_timeout_time_ms(30);
   int ret_write = i2c_write_blocking_until(I2C_PORT, address, &cmd, 1, false, timeout);
   if (ret_write == 1) {
-    sleep_ms(15);  // Delay aumentado para que slave procese
+    sleep_ms(5);  // Delay para que slave procese
     
-    // Leer respuesta con timeout aumentado
-    timeout = make_timeout_time_ms(50);
+    // Leer respuesta
+    timeout = make_timeout_time_ms(30);
     int ret_read = i2c_read_blocking_until(I2C_PORT, address, response, 1, false, timeout);
     return (ret_read == 1);
   }
@@ -127,10 +127,6 @@ bool readADC_LSB(uint8_t address, uint8_t* lsb) {
   return sendCommandAndRead(address, CMD_ADC_PA0_LSB, lsb);
 }
 
-bool readADC_I2C(uint8_t address, uint8_t* scaled) {
-  return sendCommandAndRead(address, CMD_ADC_PA0_I2C, scaled);
-}
-
 bool readADC_Full(uint8_t address, uint16_t* value) {
   // Lectura usando comandos HSB y LSB separados
   uint8_t hsb, lsb;
@@ -140,8 +136,8 @@ bool readADC_Full(uint8_t address, uint16_t* value) {
     return false;
   }
   
-  // Pequeño delay entre lecturas para dar tiempo al dispositivo
-  sleep_ms(5);
+  // Delay mínimo entre lecturas
+  sleep_ms(2);
   
   // Leer byte bajo (LSB)
   if (!readADC_LSB(address, &lsb)) {
