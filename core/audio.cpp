@@ -15,8 +15,15 @@ Audio::Audio() {
     // Iniciar con el PWM apagado
     pwm_set_gpio_level(AUDIO_PIN, 0);
     
+    // Estado non-blocking
+    tone_active = false;
+    tone_end_ms = 0;
+    melody_length = 0;
+    melody_index = 0;
+    melody_playing = false;
+    
     initialized = true;
-    printf("[Audio] Initialized on GPIO %d\n", AUDIO_PIN);
+    printf("[Audio] Initialized on GPIO %d (non-blocking)\n", AUDIO_PIN);
 }
 
 Audio::~Audio() {
@@ -24,49 +31,103 @@ Audio::~Audio() {
     pwm_set_enabled(slice_num, false);
 }
 
-void Audio::playTone(uint16_t frequency, uint16_t duration_ms) {
+// ═══════════════════════════════════════════════════════════
+// BLOCKING - Solo para startup (antes del main loop)
+// ═══════════════════════════════════════════════════════════
+void Audio::playToneBlocking(uint16_t frequency, uint16_t duration_ms) {
     if (!initialized || frequency == 0) return;
     
-    // Calcular valores para generar la frecuencia deseada
-    uint32_t clock = 266000000 / 4; // Clock speed dividido por clkdiv
+    uint32_t clock = 266000000 / 4;
     uint32_t divider = clock / frequency;
     
     pwm_set_wrap(slice_num, divider - 1);
-    pwm_set_gpio_level(AUDIO_PIN, divider / 2); // 50% duty cycle
-    
-    // Esperar la duración del tono
+    pwm_set_gpio_level(AUDIO_PIN, divider / 2);
     sleep_ms(duration_ms);
-    
-    // Apagar
     pwm_set_gpio_level(AUDIO_PIN, 0);
 }
 
+// ═══════════════════════════════════════════════════════════
+// NON-BLOCKING - Para uso durante el juego
+// ═══════════════════════════════════════════════════════════
+
+// Inicia un tono sin bloquear - retorna inmediatamente
+void Audio::startToneInternal(uint16_t frequency, uint16_t duration_ms) {
+    if (!initialized) return;
+    
+    uint32_t now = time_us_32() / 1000;
+    
+    if (frequency == 0) {
+        // Pausa silenciosa (para melodías)
+        pwm_set_gpio_level(AUDIO_PIN, 0);
+        tone_active = true;
+        tone_end_ms = now + duration_ms;
+        return;
+    }
+    
+    uint32_t clock = 266000000 / 4;
+    uint32_t divider = clock / frequency;
+    
+    pwm_set_wrap(slice_num, divider - 1);
+    pwm_set_gpio_level(AUDIO_PIN, divider / 2);
+    
+    tone_active = true;
+    tone_end_ms = now + duration_ms;
+}
+
+// Llamar cada frame desde el main loop
+void Audio::update() {
+    if (!tone_active) return;
+    
+    uint32_t now = time_us_32() / 1000;
+    if (now < tone_end_ms) return;  // Tono aún sonando
+    
+    // Tono terminó
+    pwm_set_gpio_level(AUDIO_PIN, 0);
+    tone_active = false;
+    
+    // ¿Hay más notas en la melodía?
+    if (melody_playing && melody_index < melody_length) {
+        ToneNote &note = melody_queue[melody_index++];
+        startToneInternal(note.frequency, note.duration_ms);
+    } else {
+        melody_playing = false;
+    }
+}
+
 void Audio::playMenuSound() {
-    playTone(800, 50);  // Tono corto agudo
+    melody_playing = false;
+    startToneInternal(800, 50);
 }
 
 void Audio::playSelectSound() {
-    playTone(600, 30);  // Tono más corto
+    melody_playing = false;
+    startToneInternal(600, 30);
 }
 
 void Audio::playWinSound() {
-    // Melodía simple de victoria
-    playTone(523, 100);  // Do
-    playTone(659, 100);  // Mi
-    playTone(784, 150);  // Sol
-    sleep_ms(50);
-    playTone(1047, 300); // Do alto
+    melody_queue[0] = {659, 100};   // Mi
+    melody_queue[1] = {784, 150};   // Sol
+    melody_queue[2] = {0, 50};      // Pausa
+    melody_queue[3] = {1047, 300};  // Do alto
+    melody_length = 4;
+    melody_index = 0;
+    melody_playing = true;
+    startToneInternal(523, 100);    // Do (primera nota inmediata)
 }
 
 void Audio::playLoseSound() {
-    // Melodía descendente de derrota
-    playTone(392, 200);  // Sol
-    playTone(349, 200);  // Fa
-    playTone(294, 200);  // Re
-    sleep_ms(50);
-    playTone(262, 400);  // Do bajo
+    melody_queue[0] = {349, 200};   // Fa
+    melody_queue[1] = {294, 200};   // Re
+    melody_queue[2] = {0, 50};      // Pausa
+    melody_queue[3] = {262, 400};   // Do bajo
+    melody_length = 4;
+    melody_index = 0;
+    melody_playing = true;
+    startToneInternal(392, 200);    // Sol (primera nota inmediata)
 }
 
 void Audio::stop() {
     pwm_set_gpio_level(AUDIO_PIN, 0);
+    tone_active = false;
+    melody_playing = false;
 }
