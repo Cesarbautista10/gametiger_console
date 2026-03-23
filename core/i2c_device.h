@@ -82,6 +82,11 @@ bool readADC_HSB(uint8_t address, uint8_t* hsb);
 bool readADC_LSB(uint8_t address, uint8_t* lsb);
 bool readADC_Full(uint8_t address, uint16_t* value);
 
+// ADC1 (PA1) - Action buttons
+bool readADC1_HSB(uint8_t address, uint8_t* hsb);
+bool readADC1_LSB(uint8_t address, uint8_t* lsb);
+bool readADC1_Full(uint8_t address, uint16_t* value);
+
 // ═══════════════════════════════════════════════════════════
 //           FUNCIONES DE GESTIÓN DE DIRECCIÓN I2C
 // ═══════════════════════════════════════════════════════════

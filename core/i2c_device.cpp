@@ -150,6 +150,35 @@ bool readADC_Full(uint8_t address, uint16_t* value) {
 }
 
 // ═══════════════════════════════════════════════════════════
+//           ADC1 (PA1) - ACTION BUTTONS
+// ═══════════════════════════════════════════════════════════
+
+bool readADC1_HSB(uint8_t address, uint8_t* hsb) {
+  return sendCommandAndRead(address, CMD_ADC_PA1_HSB, hsb);
+}
+
+bool readADC1_LSB(uint8_t address, uint8_t* lsb) {
+  return sendCommandAndRead(address, CMD_ADC_PA1_LSB, lsb);
+}
+
+bool readADC1_Full(uint8_t address, uint16_t* value) {
+  uint8_t hsb, lsb;
+  
+  if (!readADC1_HSB(address, &hsb)) {
+    return false;
+  }
+  
+  sleep_ms(2);
+  
+  if (!readADC1_LSB(address, &lsb)) {
+    return false;
+  }
+  
+  *value = (((uint16_t)hsb << 8) | lsb) & 0x0FFF;
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════
 //           FUNCIONES DE GESTIÓN DE DIRECCIÓN I2C
 // ═══════════════════════════════════════════════════════════
 

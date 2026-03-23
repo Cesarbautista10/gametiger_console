@@ -36,8 +36,6 @@
 class KeyBoard
 {
 private:
-    // Pines GPIO solo para A, B, START, SELECT (los otros 4 son I2C/ADC)
-    const uint8_t pinId[KEY_COUNT] = {0, 0, 0, 0, 26, 27, 16, 17};
     bool prevKeyState[KEY_COUNT];
     bool i2c_enabled;
     uint8_t i2c_error_count;
@@ -47,6 +45,9 @@ private:
     uint32_t last_health_check;      // Timestamp del último health check
     int8_t dpad_debounce_btn;        // Botón detectado en lectura anterior (-1=NONE)
     uint8_t dpad_debounce_count;     // Lecturas consecutivas del mismo botón
+    int8_t action_debounce_btn;      // Botón de acción detectado (-1=NONE)
+    uint8_t action_debounce_count;   // Lecturas consecutivas del mismo botón de acción
+    bool read_toggle;                // Alternar lectura ADC0/ADC1 cada ciclo
 public:
     KeyBoard();
     ~KeyBoard();
@@ -54,6 +55,8 @@ public:
     void checkKeyState(Screen *screen);
 private:
     void checkI2CDPad(Screen *screen);
+    void checkI2CActionButtons(Screen *screen);
+    int8_t decodeADCButton(uint16_t adc_value, const uint8_t* button_map);
 };
 
 #endif
