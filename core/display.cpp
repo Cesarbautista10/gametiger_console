@@ -48,7 +48,7 @@ void Display::initSequence() {
     
     this->sendData(ST7789_SLPOUT);
 
-    this->sendData(ST7789_MADCTL, (uint8_t)0x68);  // Landscape 90° + BGR
+    this->sendData(ST7789_MADCTL, (uint8_t)0xB8);  // Landscape 180° + BGR
     this->sendData(ST7789_COLMOD, 0x55);
 
     uint8_t buf4[] = {0x0C, 0x0C, 0x00, 0x33, 0x33};

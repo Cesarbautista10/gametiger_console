@@ -18,17 +18,8 @@ Battery::Battery() {
 }
 
 uint8_t Battery::getLevel() {
-#if defined(ENABLE_BATTERY_MONITOR)
-    uint8_t timeDiffSec = (to_ms_since_boot(get_absolute_time()) - this->lastCachedTime) / CLOCKS_PER_SEC;
-    if(timeDiffSec > 10) {
-        adc_select_input(2);  // ADC2 para GPIO 28
-        float voltage = adc_read() * 3 * 3.3f / (1 << 12);
-        uint8_t percentage = 100 * ((voltage - EMPTY_BATTERY) / (FULL_BATTERY - EMPTY_BATTERY));
-        this->levelCached = std::max(std::min((uint8_t)100, percentage), (uint8_t)0);
-        this->lastCachedTime = to_ms_since_boot(get_absolute_time());
-    }
-#endif
-    return this->levelCached;
+    // Retornar siempre 100% para evitar bugs de lectura
+    return 100;
 }
 
 bool Battery::isCharging() {
