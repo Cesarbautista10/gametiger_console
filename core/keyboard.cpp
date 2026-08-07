@@ -11,7 +11,7 @@ constexpr uint8_t CMD_ADC0_LOW = 0x57;
 constexpr uint8_t CMD_ADC1_HIGH = 0xD8;
 constexpr uint8_t CMD_ADC1_LOW = 0xD9;
 
-constexpr uint8_t dpadMap[4] = {KEY_UP, KEY_RIGHT, KEY_LEFT, KEY_DOWN};
+constexpr uint8_t dpadMap[4] = {KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_UP};
 constexpr uint8_t actionMap[4] = {KEY_START, KEY_B, KEY_A, KEY_SELECT};
 }
 
