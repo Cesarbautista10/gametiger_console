@@ -28,10 +28,11 @@
 #ifndef _GAME_TIGER_COMMON_H
 #define _GAME_TIGER_COMMON_H
 
-#define DISPLAY_WIDTH 280
+#define DISPLAY_WIDTH 320
 #define DISPLAY_HEIGHT 240
 
-#define ENABLE_BATTERY_MONITOR
+// GPIO22 is the ST7789 clock, so the old battery input cannot use it.
+// #define ENABLE_BATTERY_MONITOR
 
 #include "intmath.h"
 
@@ -46,7 +47,7 @@
 #include "tilemap.h"
 #include "level.h"
 
-#define AUDIO_PIN 23
+#define AUDIO_PIN 16
 
 enum ImageType {INDEXEDCOLORS, PIXELCOLOR};
 enum GameState {WAITING, PLAYING, PAUSED, LOST};

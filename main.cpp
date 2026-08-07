@@ -87,10 +87,6 @@ void checkScreenSwitch() {
 
 int main(int argc, char *argv[]) {
     sleep_ms(50);
-    vreg_set_voltage(VREG_VOLTAGE_1_20);
-    sleep_ms(1);
-    set_sys_clock_khz(266 * 1000, true);
-    sleep_ms(50);
 
     stdio_init_all();
     sleep_ms(1000);
@@ -101,7 +97,7 @@ int main(int argc, char *argv[]) {
     Display *display = new Display();
     display->initDMAChannel();
     display->initSequence();
-    display->clear(Color(255, 255, 255));
+    display->clear(Color(0, 0, 0));
     display->update();
 
     Battery *battery = new Battery();

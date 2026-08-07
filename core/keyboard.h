@@ -18,13 +18,18 @@
 class KeyBoard
 {
 private:
-    const uint8_t pinId[KEY_COUNT] = {16, 17, 20, 21, 26, 27, 8, 9};
     bool prevKeyState[KEY_COUNT];
+    bool readActionButtons;
 public:
     KeyBoard();
     ~KeyBoard();
 
     void checkKeyState(Screen *screen);
+private:
+    bool readADC(uint8_t highCommand, uint8_t lowCommand, uint16_t *value);
+    int8_t decodeADC(uint16_t value, const uint8_t buttonMap[4]);
+    void updateGroup(Screen *screen, uint8_t firstKey, uint8_t lastKey,
+                     int8_t activeKey);
 };
 
 #endif

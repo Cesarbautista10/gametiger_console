@@ -89,21 +89,21 @@
 
 class Display {
 private:
-    const uint8_t DC_PIN = 13;
-    const uint8_t CS_PIN = 14;
-    const uint8_t SCK_PIN = 18;
-    const uint8_t MOSI_PIN = 19;
-    const uint8_t RST_PIN = 15;
-    // const uint8_t BL_PIN = 12;
+    const uint8_t MOSI_PIN = 23;
+    const uint8_t SCK_PIN = 22;
+    const uint8_t CS_PIN = 21;
+    const uint8_t DC_PIN = 29;
+    const uint8_t RST_PIN = 27;
+    const uint8_t BL_PIN = 26;
     
-    // Display offsets for ST7789V2 240x280 (rotado 90° = 280x240)
-    const uint16_t X_OFFSET = 24;
+    // ST7789 240x320 rotado 90° = 320x240
+    const uint16_t X_OFFSET = 0;
     const uint16_t Y_OFFSET = 0;
 
     void write_cmd(const uint8_t cmd);
     void write_data(const uint8_t data);
-    void write_data(const uint8_t data[]);
-    void sendData(const uint8_t cmd, const uint8_t data[]);
+    void write_data(const uint8_t data[], size_t length);
+    void sendData(const uint8_t cmd, const uint8_t data[], size_t length);
     void sendData(const uint8_t cmd, const uint8_t data);
     void sendData(const uint8_t cmd);
     void setWindow(const uint16_t x, const uint16_t y, const uint16_t width, const uint16_t height);

@@ -11,20 +11,25 @@ Display::Display() {
 }
 
 void Display::initHardware() {
+    printf("[Display] ST7789 Arduino-compatible v5 BGR+frame-sync, SPI target 20 MHz\n");
+
     gpio_init(CS_PIN);
     gpio_set_dir(CS_PIN, GPIO_OUT);
+    gpio_put(CS_PIN, 1);
 
     gpio_init(RST_PIN);
     gpio_set_dir(RST_PIN, GPIO_OUT);
+    gpio_put(RST_PIN, 1);
 
     gpio_init(DC_PIN);
     gpio_set_dir(DC_PIN, GPIO_OUT);
 
-    // gpio_init(BL_PIN);
-    // gpio_set_dir(BL_PIN, GPIO_OUT);
-    // gpio_put(BL_PIN, 1);
+    gpio_init(BL_PIN);
+    gpio_set_dir(BL_PIN, GPIO_OUT);
+    this->setBrightness(100);
 
-    spi_init(spi0, 110 * 1000 * 1000); //62.5
+    spi_init(spi0, 20 * 1000 * 1000);
+    spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     uint br = spi_get_baudrate(spi0);
     printf("[Display] baudrate: %d\n", br);
 
@@ -44,35 +49,24 @@ void Display::initDMAChannel() {
 
 void Display::initSequence() {
     this->reset();
-    gpio_put(CS_PIN, 0);
-    
+
+    this->sendData(ST7789_SWRESET);
+    sleep_ms(150);
+
     this->sendData(ST7789_SLPOUT);
+    sleep_ms(10);
 
-    this->sendData(ST7789_MADCTL, (uint8_t)0x68);  // Rotación 90° + BGR
     this->sendData(ST7789_COLMOD, 0x55);
+    sleep_ms(10);
 
-    uint8_t buf4[] = {0x0C, 0x0C, 0x00, 0x33, 0x33};
-    this->sendData(ST7789_PORCTRL, buf4);
-    this->sendData(ST7789_GCTRL, 0x75);
-    this->sendData(ST7789_VCOMS, 0x2B);
-    this->sendData(ST7789_LCMCTRL, 0x2C);
+    // Rotation 1 (320x240) plus BGR for GameTiger's RGB565 bit layout.
+    this->sendData(ST7789_MADCTL, (uint8_t)0xA8);
 
-    this->sendData(ST7789_VDVVRHEN, 0x01);
-    this->sendData(ST7789_VRHS, 0x0B);
-    this->sendData(ST7789_VDVSET, 0x20);
-    this->sendData(ST7789_FRCTR2, 0x0F);
-
-    uint8_t buf6[] = {0xA4, 0xA1};
-    this->sendData(ST7789_PWCTRL1, buf6);
-                 
-    uint8_t buf7[] = {0xD0, 0x01, 0x04, 0x09, 0x0B, 0x07, 0x2E, 0x44, 0x43, 0x0B, 0x16, 0x15, 0x17, 0x1D};
-    this->sendData(ST7789_PVGAMCTRL, buf7);
-
-    uint8_t buf8[] = {0xD0, 0x01, 0x05, 0x0A, 0x0B, 0x08, 0x2F, 0x44, 0x41, 0x0A, 0x15, 0x14, 0x19, 0x1D};
-    this->sendData(ST7789_NVGAMCTRL, buf8);
-
-    this->sendData(ST7789_INVON);  // Inversión de colores para ST7789V2
+    this->sendData(ST7789_INVON);  // Configuración de color correcta del panel
+    this->sendData(ST7789_NORON);
+    sleep_ms(10);
     this->sendData(ST7789_DISPON);
+    sleep_ms(20);
 
     this->setWindow(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
     spi_set_format(spi0, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
@@ -82,11 +76,11 @@ void Display::reset() {
     gpio_put(CS_PIN, 1);
     
     gpio_put(RST_PIN, 1);
-    sleep_ms(10);
+    sleep_ms(100);
     gpio_put(RST_PIN, 0);
-    sleep_ms(10);
+    sleep_ms(100);
     gpio_put(RST_PIN, 1);
-    sleep_ms(120);
+    sleep_ms(200);
 }
 
 void Display::setWindow(const uint16_t sx, const uint16_t sy, const uint16_t ex, const uint16_t ey){
@@ -95,11 +89,17 @@ void Display::setWindow(const uint16_t sx, const uint16_t sy, const uint16_t ex,
     uint16_t x_end = ex + X_OFFSET - 1;
     uint16_t y_end = ey + Y_OFFSET - 1;
     
-    uint8_t buf1[] = {x_start >> 8, x_start & 0xFF, x_end >> 8, x_end & 0xFF};
-    this->sendData(ST7789_CASET, buf1);
+    uint8_t buf1[] = {
+        static_cast<uint8_t>(x_start >> 8), static_cast<uint8_t>(x_start),
+        static_cast<uint8_t>(x_end >> 8), static_cast<uint8_t>(x_end)
+    };
+    this->sendData(ST7789_CASET, buf1, sizeof(buf1));
 
-    uint8_t buf2[] = {y_start >> 8, y_start & 0xFF, y_end >> 8, y_end & 0xFF};
-    this->sendData(ST7789_RASET, buf2);
+    uint8_t buf2[] = {
+        static_cast<uint8_t>(y_start >> 8), static_cast<uint8_t>(y_start),
+        static_cast<uint8_t>(y_end >> 8), static_cast<uint8_t>(y_end)
+    };
+    this->sendData(ST7789_RASET, buf2, sizeof(buf2));
 
     this->sendData(ST7789_RAMWR);
 }
@@ -108,18 +108,24 @@ void Display::setCursor(const uint16_t x, const uint16_t y) {
     this->setWindow(x, y, x+1, y+1);
 }
 
-void Display::sendData(const uint8_t cmd, const uint8_t data[]) {    
+void Display::sendData(const uint8_t cmd, const uint8_t data[], size_t length) {
+    gpio_put(CS_PIN, 0);
     this->write_cmd(cmd);
-    this->write_data(data);
+    this->write_data(data, length);
+    gpio_put(CS_PIN, 1);
 }
 
 void Display::sendData(const uint8_t cmd, const uint8_t data) {
+    gpio_put(CS_PIN, 0);
     this->write_cmd(cmd);
     this->write_data(data);
+    gpio_put(CS_PIN, 1);
 }
 
 void Display::sendData(const uint8_t cmd) {
+    gpio_put(CS_PIN, 0);
     this->write_cmd(cmd);
+    gpio_put(CS_PIN, 1);
 }
 
 void Display::write_cmd(const uint8_t cmd) {
@@ -134,22 +140,29 @@ void Display::write_data(const uint8_t data) {
     spi_write_blocking(spi0, buf, 1);
 }
 
-void Display::write_data(const uint8_t data[]) {
-    int n = sizeof(data) / sizeof(data[0]);
+void Display::write_data(const uint8_t data[], size_t length) {
     gpio_put(DC_PIN, 1);
-    spi_write_blocking(spi0, data, n);
+    spi_write_blocking(spi0, data, length);
 }
 
 void Display::setBrightness(uint8_t brightness) {
-    // pwm_set_gpio_level(BL_PIN, int(65535 * brightness / 100));
+    gpio_put(BL_PIN, brightness > 0);
 }
 
 void Display::update() {
+    // Reset the ST7789 address cursor for every frame.  Leaving RAMWR active
+    // across frames caused the 320x240 image to wrap horizontally.
+    spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+    this->setWindow(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    spi_set_format(spi0, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
+
     gpio_put(DC_PIN, 1);
+    gpio_put(CS_PIN, 0);
 
     timetype lastUpdate = getTime();    
     dma_channel_configure(this->dmaSPIChannel, &this->dmaSPIConfig, &spi_get_hw(spi0)->dr, (uint16_t*)this->frameBuffer->buffer, DISPLAY_WIDTH * DISPLAY_HEIGHT, true);
     dma_channel_wait_for_finish_blocking(this->dmaSPIChannel);
+    gpio_put(CS_PIN, 1);
 
     uint16_t deltaTimeMS = getTimeDiffMS(lastUpdate);
     // printf("[Display] Display Update: %d\n", deltaTimeMS);
