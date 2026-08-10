@@ -27,3 +27,5 @@ fdc38d4466826892412c0e34e19bd846 pico_extras/src/rp2_common/pico_audio_i2s/CMake
 51dea18d88fb8d1854aef82fbefaabea pico_extras/src/rp2_common/pico_scanvideo_dpi/timing.pio.h
 923621c2bfcfe184bc2cad725111626e pico_extras/src/rp2_common/pico_sd_card/CMakeFiles/pico_sd_card_sd_card_pio_h
 67101455630bd386463c8a1fcdaf540a pico_extras/src/rp2_common/pico_sd_card/sd_card.pio.h
+dc84c27c5b088af4affdd00ed5faba7f third_party/no-os-fatfs/src/CMakeFiles/no-OS-FatFS-SD-SDIO-SPI-RPi-Pico_rp2040_sdio_pio_h
+f6aa7c5adf5331b1bc83414be9a5f3d2 third_party/no-os-fatfs/src/rp2040_sdio.pio.h

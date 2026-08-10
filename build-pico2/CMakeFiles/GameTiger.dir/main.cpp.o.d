@@ -257,6 +257,7 @@ CMakeFiles/GameTiger.dir/main.cpp.o: \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/framebuffer.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/color.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/menuscreen.h \
+ /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/sd_storage.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/snakescreen.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/keyboard.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/screen.h \

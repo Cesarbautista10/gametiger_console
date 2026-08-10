@@ -19,17 +19,34 @@ class KeyBoard
 {
 private:
     bool prevKeyState[KEY_COUNT];
-    bool readActionButtons;
+    bool joystickDirection[4];
+    bool joystickButtonDown;
+    bool joystickCommandPending;
+    uint64_t joystickResponseReadyUS;
+    uint64_t joystickNextCommandUS;
+    uint8_t joystickFailures;
+
+    uint8_t adcButtonDown;
+    bool adcButtonCommandPending;
+    uint64_t adcButtonResponseReadyUS;
+    uint64_t adcButtonNextCommandUS;
+    uint8_t adcButtonFailures;
+    uint8_t adcButtonCandidate;
+    uint8_t adcButtonCandidateCount;
+    bool adcButtonArmed;
 public:
     KeyBoard();
     ~KeyBoard();
 
-    void checkKeyState(Screen *screen);
+    void checkKeyState(Screen *screen, bool repeatHeld = true);
 private:
-    bool readADC(uint8_t highCommand, uint8_t lowCommand, uint16_t *value);
-    int8_t decodeADC(uint16_t value, const uint8_t buttonMap[4]);
-    void updateGroup(Screen *screen, uint8_t firstKey, uint8_t lastKey,
-                     int8_t activeKey);
+    void pollJoystick();
+    void applyJoystickFrame(const uint8_t frame[4]);
+    void releaseJoystick();
+    void pollADCButtons();
+    void applyADCButtonValue(uint16_t value);
+    void dispatchKeys(Screen *screen, const bool keyState[KEY_COUNT],
+                      bool repeatHeld);
 };
 
 #endif

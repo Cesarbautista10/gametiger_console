@@ -1,4 +1,5 @@
 #include "display.h"
+#include "spi_bus_config.h"
 #include <stdio.h>
 #include <algorithm>
 #include <memory>
@@ -11,7 +12,11 @@ Display::Display() {
 }
 
 void Display::initHardware() {
-    printf("[Display] ST7789 Arduino-compatible v5 BGR+frame-sync, SPI target 20 MHz\n");
+    printf("[Display] ST7789 BGR+frame-sync, command %lu MHz, pixels %lu MHz\n",
+           static_cast<unsigned long>(
+               HardwareConfig::DISPLAY_COMMAND_SPI_BAUD_HZ / 1000000),
+           static_cast<unsigned long>(
+               HardwareConfig::DISPLAY_PIXEL_SPI_BAUD_HZ / 1000000));
 
     gpio_init(CS_PIN);
     gpio_set_dir(CS_PIN, GPIO_OUT);
@@ -28,7 +33,7 @@ void Display::initHardware() {
     gpio_set_dir(BL_PIN, GPIO_OUT);
     this->setBrightness(100);
 
-    spi_init(spi0, 20 * 1000 * 1000);
+    spi_init(spi0, HardwareConfig::DISPLAY_COMMAND_SPI_BAUD_HZ);
     spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     uint br = spi_get_baudrate(spi0);
     printf("[Display] baudrate: %d\n", br);
@@ -59,8 +64,9 @@ void Display::initSequence() {
     this->sendData(ST7789_COLMOD, 0x55);
     sleep_ms(10);
 
-    // Rotation 1 (320x240) plus BGR for GameTiger's RGB565 bit layout.
-    this->sendData(ST7789_MADCTL, (uint8_t)0xA8);
+    // Landscape orientation for the console, rotated 180 degrees from 0xA8.
+    // Keep BGR enabled for GameTiger's RGB565 color layout.
+    this->sendData(ST7789_MADCTL, (uint8_t)0x68);
 
     this->sendData(ST7789_INVON);  // Configuración de color correcta del panel
     this->sendData(ST7789_NORON);
@@ -69,6 +75,7 @@ void Display::initSequence() {
     sleep_ms(20);
 
     this->setWindow(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    spi_set_baudrate(spi0, HardwareConfig::DISPLAY_PIXEL_SPI_BAUD_HZ);
     spi_set_format(spi0, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 }
 
@@ -149,23 +156,45 @@ void Display::setBrightness(uint8_t brightness) {
     gpio_put(BL_PIN, brightness > 0);
 }
 
-void Display::update() {
+void Display::beginUpdate() {
     // Reset the ST7789 address cursor for every frame.  Leaving RAMWR active
     // across frames caused the 320x240 image to wrap horizontally.
+    spi_set_baudrate(spi0, HardwareConfig::DISPLAY_COMMAND_SPI_BAUD_HZ);
     spi_set_format(spi0, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     this->setWindow(0, 0, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    spi_set_baudrate(spi0, HardwareConfig::DISPLAY_PIXEL_SPI_BAUD_HZ);
     spi_set_format(spi0, 16, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
 
     gpio_put(DC_PIN, 1);
     gpio_put(CS_PIN, 0);
 
-    timetype lastUpdate = getTime();    
     dma_channel_configure(this->dmaSPIChannel, &this->dmaSPIConfig, &spi_get_hw(spi0)->dr, (uint16_t*)this->frameBuffer->buffer, DISPLAY_WIDTH * DISPLAY_HEIGHT, true);
-    dma_channel_wait_for_finish_blocking(this->dmaSPIChannel);
-    gpio_put(CS_PIN, 1);
+}
 
-    uint16_t deltaTimeMS = getTimeDiffMS(lastUpdate);
-    // printf("[Display] Display Update: %d\n", deltaTimeMS);
+bool Display::updateInProgress() {
+    return dma_channel_is_busy(this->dmaSPIChannel);
+}
+
+void Display::finishUpdate() {
+    dma_channel_wait_for_finish_blocking(this->dmaSPIChannel);
+
+    // DMA completion only means the final halfword reached the SPI FIFO.
+    // Keep CS asserted until the peripheral shifts every remaining bit, then
+    // discard RX data accumulated by the write-only transfer.
+    while (spi_is_readable(spi0))
+        (void)spi_get_hw(spi0)->dr;
+    while (spi_is_busy(spi0))
+        tight_loop_contents();
+    while (spi_is_readable(spi0))
+        (void)spi_get_hw(spi0)->dr;
+    spi_get_hw(spi0)->icr = SPI_SSPICR_RORIC_BITS;
+
+    gpio_put(CS_PIN, 1);
+}
+
+void Display::update() {
+    beginUpdate();
+    finishUpdate();
 }
 
 Display::~Display() {

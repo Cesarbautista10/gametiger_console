@@ -123,6 +123,9 @@ public:
     void initDMAChannel();
     void initSequence();
 
+    void beginUpdate();
+    bool updateInProgress();
+    void finishUpdate();
     void update();
     void setBrightness(uint8_t brightness);
 

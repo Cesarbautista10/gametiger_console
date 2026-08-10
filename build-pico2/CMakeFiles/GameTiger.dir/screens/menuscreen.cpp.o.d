@@ -243,5 +243,6 @@ CMakeFiles/GameTiger.dir/screens/menuscreen.cpp.o: \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/../core/color.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/../core/screen.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/screen.h \
+ /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/sd_storage.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/keyboard.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/screen.h

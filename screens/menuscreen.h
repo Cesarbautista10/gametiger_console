@@ -1,5 +1,6 @@
 #include "../core/common.h"
 #include "../core/screen.h"
+#include "../core/sd_storage.h"
 
 class MenuScreen : public Screen
 {
@@ -7,7 +8,7 @@ private:
     const uint8_t menuCount = 9;
     const std::string menuItemNames[9][7] = {
         {"Snake", "", "", "", "", "", ""},
-        {"Game Boy", "Matrix Rain", "", "", "", "", ""},
+        {"Game Boy", "", "", "", "", "", ""},
         {"2048", "", "", "", "", "", ""},
         {"Tetris", "Easy", "Medium", "Hard", "", "", ""},
         {"Minesweeper", "Easy", "Medium", "Hard", "", "", ""},
@@ -19,9 +20,17 @@ private:
     uint8_t selectedMenuItem, currentMenuItem, animationCounter;
     uint8_t currentOptionItem;
     bool isAnimating = false;;
+    bool gameBoyBrowserOpen = false;
     const uint8_t menuItemGap = 160;
     TileMap *bgLayer;
     uint8_t option;
+    size_t gameBoyRomCount;
+    SDLoadResult gameBoyScanResult;
+
+    void refreshGameBoyCatalog();
+    void drawGameBoyBrowser(Display *display);
+    uint8_t currentOptionCount() const;
+    const char *currentOptionName() const;
 
 public:
     MenuScreen(void (*returnCallBack)(int8_t menu, uint8_t option), void (*highScoreCallBack)(uint32_t highscore), uint32_t highscore, uint8_t option);

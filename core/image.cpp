@@ -2,6 +2,15 @@
 #include <iostream>
 #include <fstream>
 
+namespace {
+uint16_t glyphIndex(char character) {
+    const std::string::size_type index = ref.find(character);
+    if (index == std::string::npos)
+        return static_cast<uint16_t>(ref.size() - 1); // Space glyph.
+    return static_cast<uint16_t>(index);
+}
+}
+
 Image::Image(Size2 s, uint16_t cc, Color *plt, uint8_t *alphas, uint8_t *pd) {
     this->hasIndexedColors = true;
     this->size = s;
@@ -116,9 +125,12 @@ void Image::drawText(Display *display, std::string text, Vec2 destPos, uint8_t a
 
 void Image::drawText(Display *display, std::string text, Vec2 destPos, uint8_t alpha, uint8_t scaleRatio) {
     for(char& c : text) {
-        uint16_t i = ref.find(c);
+        const uint16_t i = glyphIndex(c);
         Size2 spriteSize = Size2(this->getSpriteWidth(i), this->getSpriteHeight(i));
-        if(c != ' ')
+        // The space entry only supplies advance width and intentionally sits
+        // just past the bitmap. Unsupported punctuation also maps to it, so
+        // never ask drawSprite() to read pixels for that sentinel glyph.
+        if(i != static_cast<uint16_t>(ref.size() - 1))
             this->drawSprite(display, i, Rect2(destPos, spriteSize*scaleRatio), alpha);
         destPos.x += (spriteSize.w - 1) * scaleRatio;
     }
@@ -127,7 +139,7 @@ void Image::drawText(Display *display, std::string text, Vec2 destPos, uint8_t a
 uint16_t Image::getTextWidth(std::string text) {
     uint16_t width = 0;
     for(char& c : text) {
-        uint16_t i = ref.find(c);
+        const uint16_t i = glyphIndex(c);
         width += this->getSpriteWidth(i) - 1;
     }
     return width;
@@ -136,7 +148,7 @@ uint16_t Image::getTextWidth(std::string text) {
 uint16_t Image::getTextWidth(std::string text, uint8_t scaleRatio) {
     uint16_t width = 0;
     for(char& c : text) {
-        uint16_t i = ref.find(c);
+        const uint16_t i = glyphIndex(c);
         width += (this->getSpriteWidth(i) - 1)*scaleRatio;
     }
     return width;

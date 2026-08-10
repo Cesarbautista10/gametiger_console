@@ -11,6 +11,8 @@ TileMap::TileMap(uint8_t xc, uint8_t yc, uint8_t tw, uint8_t th, uint16_t* ts) {
 }
 
 TileMap::~TileMap() {
+    delete[] this->tiles;
+    this->tiles = nullptr;
 }
 
 void TileMap::addTileInfo(uint16_t index, TileInfo tinfo) {

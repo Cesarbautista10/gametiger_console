@@ -246,4 +246,4 @@ CMakeFiles/GameTiger.dir/screens/gameboyscreen.cpp.o: \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/keyboard.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/screen.h \
  /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/Peanut-GB/peanut_gb.h \
- /media/mr/firmware/github_lab/data/gametiger_console/screens/gbgames/demo.h
+ /media/mr/firmware/github_lab/data/gametiger_console/screens/../core/sd_storage.h

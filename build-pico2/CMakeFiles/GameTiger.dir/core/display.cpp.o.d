@@ -240,6 +240,7 @@ CMakeFiles/GameTiger.dir/core/display.cpp.o: \
  /media/mr/firmware/github_lab/data/gametiger_console/core/../core/framebuffer.h \
  /media/mr/firmware/github_lab/data/gametiger_console/core/../core/color.h \
  /media/mr/firmware/github_lab/data/gametiger_console/core/../core/screen.h \
+ /media/mr/firmware/github_lab/data/gametiger_console/core/spi_bus_config.h \
  /usr/include/newlib/c++/13.2.1/memory \
  /usr/include/newlib/c++/13.2.1/bits/stl_raw_storage_iter.h \
  /usr/include/newlib/c++/13.2.1/bits/align.h \

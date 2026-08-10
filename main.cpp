@@ -89,7 +89,9 @@ int main(int argc, char *argv[]) {
     sleep_ms(50);
 
     stdio_init_all();
-    sleep_ms(1000);
+    // USB stdio continues enumerating asynchronously; do not leave the LCD
+    // black for a full second just to wait for an optional serial monitor.
+    sleep_ms(100);
 
     printf("[Main] Starting\n");
     srand((unsigned int)time(0));
@@ -110,13 +112,21 @@ int main(int argc, char *argv[]) {
         uint16_t deltaTimeMS = getTimeDiffMS(lastUpdate);
         lastUpdate = getTime();
 
-        screen->update(deltaTimeMS);
         keyboard->checkKeyState(screen);
+        screen->update(deltaTimeMS);
         screen->draw(display);
 
         battery->drawLevel(display);
         // printf("[Main] FPS: %d\n", int(1000 / deltaTimeMS));
-        display->update();
+        display->beginUpdate();
+        while(display->updateInProgress()) {
+            // The display DMA occupies most of every frame. Use that time to
+            // keep both I2C controllers near their native 100 Hz cadence,
+            // while suppressing held-key repeats until the next game frame.
+            keyboard->checkKeyState(screen, false);
+            tight_loop_contents();
+        }
+        display->finishUpdate();
         checkScreenSwitch();
     }
 

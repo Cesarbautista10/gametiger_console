@@ -7,6 +7,13 @@ class GameBoyScreen : public Screen
 private:
     uint8_t option;
     timetype lastUpdate;
+	uint64_t lastFrameTimeUS;
+	uint64_t frameAccumulatorUS;
+    bool exitRequested;
+    bool paused;
+    uint8_t pendingJoypadPresses;
+    uint8_t pendingJoypadReleases;
+    std::string romPath;
 
     void* gb_ptr;
 
@@ -16,8 +23,15 @@ public:
 
 	/* Pointer to allocated memory holding GB file. */
     uint8_t *rom;
+	size_t rom_size;
+	bool rom_owned;
 	/* Pointer to allocated memory holding save file. */
 	uint8_t *cart_ram;
+	size_t cart_ram_size;
+
+	bool load_failed;
+	bool emulator_error;
+	std::string error_message;
 
     Display *display;
     

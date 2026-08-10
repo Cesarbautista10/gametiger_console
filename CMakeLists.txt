@@ -23,6 +23,8 @@ add_executable(${PROJECT_NAME}
     core/image.cpp
     core/battery.cpp
     core/keyboard.cpp
+    core/sd_hw_config.c
+    core/sd_storage.cpp
     core/tilemap.cpp
     core/level.cpp
     core/LoRa/lora.cpp
@@ -42,6 +44,8 @@ add_executable(${PROJECT_NAME}
 
 pico_sdk_init()
 
+add_subdirectory(third_party/no-os-fatfs/src)
+
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR} )
 target_link_libraries(${PROJECT_NAME} 
     pico_stdlib 
@@ -54,6 +58,7 @@ target_link_libraries(${PROJECT_NAME}
     hardware_flash 
     hardware_sync
     hardware_pll
+    no-OS-FatFS-SD-SDIO-SPI-RPi-Pico
 )
 target_compile_definitions(${PROJECT_NAME} PRIVATE PICO_CLOCK_AJDUST_PERI_CLOCK_WITH_SYS_CLOCK=1)
 

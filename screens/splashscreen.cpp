@@ -34,12 +34,14 @@ SplashScreen::SplashScreen(void (*rcb)(int8_t menu, uint8_t option), void (*hscb
 }
 
 SplashScreen::~SplashScreen() {
+    delete this->bgLayer;
+    this->bgLayer = nullptr;
     printf("[SplashScreen] Destructing\n");
 }
 
 void SplashScreen::update(uint16_t deltaTimeMS) {
     this->totalDuration += deltaTimeMS;
-    if(this->totalDuration > 3000) {
+    if(this->totalDuration > 1500) {
         this->returnCallBack(this->screenId, this->option);
         return;
     }
@@ -66,8 +68,8 @@ void SplashScreen::draw(Display *display) {
 }
 
 void SplashScreen::keyPressed(uint8_t key) {
-    const char c[6] = {'U', 'D', 'L', 'R', 'A', 'B'};
-    printf("[SplashScreen] Key: %c\n", c[key]);
+    (void)key;
+    this->returnCallBack(this->screenId, this->option);
 }
 
 void SplashScreen::keyReleased(uint8_t key) {

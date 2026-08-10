@@ -2,7 +2,8 @@
 # Script para flashear GameTiger.uf2 al RP2040
 # Uso: ./flash.sh
 
-FIRMWARE="GameTiger.uf2"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+FIRMWARE="$SCRIPT_DIR/build-pico2/GameTiger.uf2"
 MOUNT_POINT="/media/$USER/RPI-RP2"
 
 echo "==========================================="
