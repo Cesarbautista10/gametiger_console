@@ -186,3 +186,11 @@ CMakeCache.txt
 _deps/
 picotool/
 pico_sdk_import.cmake
+
+# Dependencias y compilaciones locales
+/unit_firmware_i2c_joystick_py32-main/
+/build-pico2/
+
+# ROM comerciales y plantilla local para incrustarlos
+/screens/gbgames/*.gb
+/screens/gbgames/embedded_gb_roms.S.in
