@@ -13,7 +13,7 @@ A retro-themed gaming console, crafted and tailored exclusively for educational 
 - **Display**: ST7789V2 LCD 320×240 pixels (1.69" diagonal)
 - **Audio**: PAM8302A Class-D Amplifier
 - **Battery**: Li-Po with charging circuit
-- **Input**: D-Pad via I2C ADC + 4 GPIO buttons (A, B, Start, Select)
+- **Input**: Joystick I2C DDP con dos escaleras ADC (D-Pad + A/B/Start/Select)
 
 <div style="display: flex; justify-content: space-between;">
     <img src="./docs/images/gametiger-gameboy.jpeg" alt="GameTiger Console" width="48%">

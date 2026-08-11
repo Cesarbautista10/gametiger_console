@@ -18,7 +18,9 @@
 #include "screens/settingsscreen.h"
 
 #define HIGHSCORESIZE (FLASH_PAGE_SIZE/4)
-#define FLASH_TARGET_OFFSET (1536 * 1024)
+// Reservar el último sector de la Flash. El offset anterior de 1.5 MiB se
+// solaparía con los ROM Game Boy incrustados.
+#define FLASH_TARGET_OFFSET (PICO_FLASH_SIZE_BYTES - FLASH_SECTOR_SIZE)
 
 Screen *screen;
 Lora *lora;
@@ -132,22 +134,20 @@ int main(int argc, char *argv[]) {
     audio = new Audio();
     globalAudio = audio; // Hacer accesible globalmente
     
-    // Melodía de arranque mejorada - Intro de 8 bits
+    // Melodía de arranque Coin/Power-Up. Puede bloquear aquí porque el
+    // bucle principal todavía no ha iniciado.
     printf("[Main] Playing startup sound...\n");
-    audio->playTone(659, 120);   // Mi
-    sleep_ms(30);
-    audio->playTone(659, 120);   // Mi
-    sleep_ms(30);
-    audio->playTone(659, 120);   // Mi
-    sleep_ms(80);
-    audio->playTone(523, 120);   // Do
-    sleep_ms(30);
-    audio->playTone(659, 180);   // Mi
-    sleep_ms(80);
-    audio->playTone(784, 240);   // Sol
-    sleep_ms(200);
-    audio->playTone(392, 240);   // Sol bajo
-    sleep_ms(300);
+    audio->playToneBlocking(988, 80);    // Si5
+    sleep_ms(20);
+    audio->playToneBlocking(1319, 80);   // Mi6
+    sleep_ms(20);
+    audio->playToneBlocking(1568, 80);   // Sol6
+    sleep_ms(20);
+    audio->playToneBlocking(2093, 200);  // Do7
+    sleep_ms(60);
+    audio->playToneBlocking(1568, 80);   // Sol6
+    sleep_ms(20);
+    audio->playToneBlocking(2093, 300);  // Do7
     
     screen = new SplashScreen(*backHandler, *highScoreHandler, 0, 1);
 
@@ -159,6 +159,7 @@ int main(int argc, char *argv[]) {
 
         screen->update(deltaTimeMS);
         keyboard->checkKeyState(screen);
+        if (audio) audio->update();
         screen->draw(display);
 
         battery->drawLevel(display);

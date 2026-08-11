@@ -23,21 +23,7 @@ Color: RGB565 (16-bit, 65K colores)
 Driver: ST7789V2 compatible
 ```
 
-## 🎮 Botones de Control
-
-```
-Botones GPIO              RP2350 GPIO   Pull-up
-┌──────────────┐         ┌───────────┐  ┌──────┐
-│  Botón A     ├────────►│  GPIO 26  ├──┤ 10kΩ │── VCC
-│  Botón B     ├────────►│  GPIO 27  ├──┤ 10kΩ │── VCC
-│  START       ├────────►│  GPIO 16  ├──┤ 10kΩ │── VCC
-│  SELECT      ├────────►│  GPIO 17  ├──┤ 10kΩ │── VCC
-└──────────────┘         └───────────┘  └──────┘
-                                        (Pull-up interno activado)
-Botones GPIO: Activo en BAJO (GND cuando presionado)
-```
-
-### D-Pad I2C (Botonera ADC)
+## 🎮 Joystick I2C (dos escaleras ADC)
 
 ```
 Botonera I2C              RP2350 I2C0
@@ -47,26 +33,52 @@ Botonera I2C              RP2350 I2C0
 │  VCC         ├────────►│  3.3V     │
 │  GND         ├────────►│  GND      │
 └──────────────┘         └───────────┘
-
-Dirección I2C: 0x1A
-Frecuencia: 100kHz
-Protocolo: CMD (0xD8/0xD9) → STOP → delay 10ms → READ
-ADC: 12 bits (0-4095)
-
-Rangos de voltaje (3.3V referencia):
-- UP:    2150-2550  (~2350, 1.9V)
-- DOWN:     0-200   (~4,    0.0V)
-- LEFT:   600-1000  (~792,  0.6V)
-- RIGHT: 1450-1850  (~1649, 1.3V)
-- NONE:  3900-4095  (~4088, 3.3V)
 ```
+
+Dirección I2C configurada en GameTiger: 0x53 (7 bits)
+Dirección I2C de fábrica: 0x20 (7 bits)
+Dirección persistida: cualquiera entre 0x08 y 0x77; GameTiger la detecta
+Device ID DDP: 0x0101
+Frecuencia: 100kHz
+Protocolo: WRITE 0x80 → STOP → delay 10ms → READ 4 bytes
+Trama: [XH+R, XL, YH, YL], con bit 7 reservado siempre en 1
+
+Entradas físicas en el microcontrolador de la botonera:
+
+- X = PA1/ADC_IN1: B, START, A, SELECT
+- Y = PA0/ADC_IN0: UP, RIGHT, LEFT, DOWN
+- PA2 no se usa para la botonera en esta revisión de hardware
+
+Cada ADC es de 12 bits (0-4095). Una escalera permite una tecla de su grupo a
+la vez; como X e Y son canales separados, sí se puede pulsar una dirección y
+un botón de acción simultáneamente.
+
+Ventanas iniciales usadas por ambos canales (se configuran por separado en
+`core/keyboard.h`):
+
+- Slot 1: 0-500
+- Slot 2: 600-1500
+- Slot 3: 1550-2350
+- Slot 4: 2400-3300
+- Ninguna tecla: fuera de esos rangos (normalmente cerca de 4095)
+
+Mapeo lógico de la consola:
+
+- Y 0-500: UP
+- Y 600-1500: RIGHT
+- Y 1550-2350: LEFT
+- Y 2400-3300: DOWN
+- X 0-500: B
+- X 600-1500: START
+- X 1550-2350: A
+- X 2400-3300: SELECT
 
 ## 🔊 Audio
 
 ```
 Amplificador PAM8302A     RP2350
 ┌──────────────┐         ┌───────────┐
-│  Audio IN    ├────────►│  GPIO 23  │  PWM
+│  Audio IN    ├────────►│  GPIO 16  │  PWM
 │  VCC         ├────────►│  3.3V     │
 │  GND         ├────────►│  GND      │
 │              │         └───────────┘
@@ -102,36 +114,26 @@ Divisor de voltaje en VSYS para lectura ADC
 | 13 | CS | OUT | Display Chip Select (D6) |
 | 14 | SCK (SPI1) | OUT | Display SPI Clock (D5) |
 | 15 | MOSI (SPI1) | OUT | Display SPI TX (D4) |
-| 16 | START | IN | Botón Start (pull-up interno, activo LOW) |
-| 17 | SELECT | IN | Botón Select (pull-up interno, activo LOW) |
+| 16 | AUDIO_PWM | OUT | PWM para amplificador PAM8302A |
+| 17 | - | - | No usado por la botonera I2C |
 | 18 | RST | OUT | Display Reset (D1) |
 | 19-21 | - | - | **LIBRES** |
 | 22 | CHG_STAT | IN | Estado de carga batería |
-| 23 | AUDIO_PWM | OUT | PWM para amplificador PAM8302A |
+| 23 | - | - | No usado por el audio en esta rama |
 | 24-25 | - | - | **LIBRES** |
-| 26 | BTN_A | IN | Botón A (pull-up interno, activo LOW) |
-| 27 | BTN_B | IN | Botón B (pull-up interno, activo LOW) |
+| 26-27 | - | - | No usados por la botonera I2C |
 | 28 | ADC_VSYS | ADC | Medición voltaje batería (ADC2) |
-| 29 | - | - | **LIBRE** |
+| 29 | - | - | Libre tras mover el audio a GPIO16 |
 
 ### Notas:
-- **D-Pad (UP/DOWN/LEFT/RIGHT)**: Controlado via I2C (GPIO 8/9) en dirección 0x1A
-- **Botones activo LOW**: Conectar botón entre GPIO y GND (presionado = LOW)
-- **Pull-ups**: Todos los botones GPIO usan resistencias pull-up internas activadas
+
+- **Los ocho controles** llegan por I2C (GPIO 8/9) desde dos escaleras ADC
+- **Dirección**: 0x53 preferida, 0x20 de fábrica o cualquier dirección persistida detectada por Device ID
 - **SPI Display**: SPI1 @ 110 MHz para pantalla ST7789V2
-| 21 | - | - | **LIBRE** (antes D-Pad RIGHT) |
-| 22 | POWER | IN | Estado de carga |
-| 23 | AUDIO | PWM | Salida de audio (buzzer/amplificador) |
-| 24 | SDA | I2C0 | D-Pad I2C Data (botonera @ 0x56) |
-| 25 | SCL | I2C0 | D-Pad I2C Clock (botonera @ 0x56) |
-| 26 | BTN_A | IN | Botón A (pull-up) |
-| 27 | BTN_B | IN | Botón B (pull-up) |
-| 28 | VSYS | ADC | Nivel de batería |
-| 29-47 | - | - | **LIBRES** (RP2350 extendido) |
 
 ## 🔧 Configuración de Hardware
 
-### SPI0 (Display)
+### SPI1 (Display)
 - **Baudrate:** 110 MHz
 - **Modo:** CPOL=0, CPHA=0
 - **Orden:** MSB First
@@ -144,7 +146,7 @@ Divisor de voltaje en VSYS para lectura ADC
 - **Batería Empty:** 2.54V
 
 ### PWM (Audio)
-- **Pin:** GPIO 23
+- **Pin:** GPIO 16
 - **Frecuencia:** Configurable por software
 
 ## 💡 Expansiones Posibles
@@ -181,7 +183,7 @@ Los pines están definidos en:
 - Display: `core/display.h` líneas 92-97
 - Teclado: `core/keyboard.h` línea 21  
 - Batería: `core/battery.h` líneas 9-10
-- Audio: `core/common.h` línea 54 (GPIO 23)
+- Audio: `core/common.h` línea 54 (GPIO 16)
 
 ## 🔄 Configuración de Compilación
 

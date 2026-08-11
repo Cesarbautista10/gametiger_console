@@ -134,13 +134,17 @@ GameTiger-Console/
 - Pins: See [PINOUT.md](../PINOUT.md)
 
 ### Controls
-- **D-Pad**: I2C ADC-based (address 0x56)
-- **Buttons A/B**: GPIO 26, 27 (active low, pull-up)
-- **Start/Select**: GPIO 8, 9 (active low, pull-up)
+
+- **Bus**: I2C0, SDA GPIO 8 y SCL GPIO 9, 100 kHz
+- **Joystick DDP**: dirección preferida `0x53`, dirección de fábrica `0x20` (puede cambiar por Flash), ID `0x0101`
+- **D-Pad**: escalera Y en PA0/ADC_IN0 del esclavo
+- **A/B/Start/Select**: escalera X en PA1/ADC_IN1 del esclavo
+- **Lectura**: comando `0x80`, espera de 10 ms y trama atómica de 4 bytes
 
 ### Audio
+
 - PAM8302A Class-D Amplifier
-- PWM output on GPIO 23
+- PWM output on GPIO 16
 
 ## Creating a New Game
 

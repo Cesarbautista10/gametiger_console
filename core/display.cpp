@@ -48,7 +48,9 @@ void Display::initSequence() {
     
     this->sendData(ST7789_SLPOUT);
 
-    this->sendData(ST7789_MADCTL, (uint8_t)0x68);  // Landscape 90° + BGR
+    // Landscape invertido 180° respecto de la orientación anterior.
+    // Se conservan MV y BGR; al rotar 180° se intercambian MX por MY.
+    this->sendData(ST7789_MADCTL, (uint8_t)0xA8);
     this->sendData(ST7789_COLMOD, 0x55);
 
     uint8_t buf4[] = {0x0C, 0x0C, 0x00, 0x33, 0x33};

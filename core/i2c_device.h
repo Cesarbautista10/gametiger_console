@@ -35,6 +35,15 @@ struct DigitalReadStats {
   uint32_t last_read_time;
 };
 
+// Trama atómica del firmware unit_firmware_i2c_joystick_py32.
+// X proviene de PA1/ADC_IN1 y Y de PA0/ADC_IN0. El bit de switch se conserva
+// en el protocolo, pero esta variante lo devuelve siempre liberado.
+struct JoystickFrame {
+  uint16_t x;
+  uint16_t y;
+  bool switch_pressed;
+};
+
 // ═══════════════════════════════════════════════════════════
 //           FUNCIONES DE COMUNICACIÓN I2C BÁSICA
 // ═══════════════════════════════════════════════════════════
@@ -44,6 +53,14 @@ bool sendCommand(uint8_t address, uint8_t cmd);
 
 // Enviar comando y leer respuesta (1 byte)
 bool sendCommandAndRead(uint8_t address, uint8_t cmd, uint8_t* response);
+
+// Identificar y leer el joystick DDP sin usar los comandos ADC heredados.
+bool readJoystickDeviceId(uint8_t address, uint16_t* device_id);
+bool readJoystickFrame(uint8_t address, JoystickFrame* frame);
+// Versión dividida para el bucle principal: permite esperar los 10 ms que
+// necesita el esclavo sin detener la emulación de Game Boy.
+bool requestJoystickFrame(uint8_t address);
+bool receiveJoystickFrame(uint8_t address, JoystickFrame* frame);
 
 // ═══════════════════════════════════════════════════════════
 //           FUNCIONES DE CONTROL DE RELAY

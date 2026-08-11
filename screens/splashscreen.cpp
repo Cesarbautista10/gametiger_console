@@ -66,8 +66,8 @@ void SplashScreen::draw(Display *display) {
 }
 
 void SplashScreen::keyPressed(uint8_t key) {
-    const char c[6] = {'U', 'D', 'L', 'R', 'A', 'B'};
-    printf("[SplashScreen] Key: %c\n", c[key]);
+    const char c[KEY_COUNT] = {'U', 'D', 'L', 'R', 'A', 'B', 'T', 'S'};
+    printf("[SplashScreen] Key: %c\n", key < KEY_COUNT ? c[key] : '?');
 }
 
 void SplashScreen::keyReleased(uint8_t key) {

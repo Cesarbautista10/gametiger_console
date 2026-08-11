@@ -1,32 +1,64 @@
 #include "keyboard.h"
 #include "audio.h"
 
+namespace {
+
+// X/PA1 contiene los cuatro botones de acción. Y/PA0 contiene el D-pad.
+// Cada escalera permite una tecla a la vez, pero ambas se leen juntas y por
+// eso sí permiten una dirección y una acción simultáneas.
+constexpr uint8_t DPAD_KEY_MAP[4] = {
+    KEY_UP, KEY_RIGHT, KEY_LEFT, KEY_DOWN
+};
+constexpr uint8_t ACTION_KEY_MAP[4] = {
+    KEY_B, KEY_START, KEY_A, KEY_SELECT
+};
+constexpr uint16_t DPAD_SLOT_MIN[4] = {
+    DPAD_ADC_SLOT_1_MIN, DPAD_ADC_SLOT_2_MIN,
+    DPAD_ADC_SLOT_3_MIN, DPAD_ADC_SLOT_4_MIN
+};
+constexpr uint16_t DPAD_SLOT_MAX[4] = {
+    DPAD_ADC_SLOT_1_MAX, DPAD_ADC_SLOT_2_MAX,
+    DPAD_ADC_SLOT_3_MAX, DPAD_ADC_SLOT_4_MAX
+};
+constexpr uint16_t ACTION_SLOT_MIN[4] = {
+    ACTION_ADC_SLOT_1_MIN, ACTION_ADC_SLOT_2_MIN,
+    ACTION_ADC_SLOT_3_MIN, ACTION_ADC_SLOT_4_MIN
+};
+constexpr uint16_t ACTION_SLOT_MAX[4] = {
+    ACTION_ADC_SLOT_1_MAX, ACTION_ADC_SLOT_2_MAX,
+    ACTION_ADC_SLOT_3_MAX, ACTION_ADC_SLOT_4_MAX
+};
+
+}  // namespace
+
 KeyBoard::KeyBoard() {
-    printf("[Keyboard] driver loading...\n");
-    
-    // Inicializar I2C para la botonera
+    printf("[Keyboard] joystick driver loading...\n");
+
     i2c_device_init();
-    i2c_enabled = true;
+    joystick_i2c_addr = JOYSTICK_I2C_ADDR;
+    i2c_enabled = false;
     i2c_error_count = 0;
-    i2c_success_count = 0;
     last_i2c_check = 0;
     last_i2c_retry = 0;
-    last_health_check = 0;
-    dpad_debounce_btn = -1;
-    dpad_debounce_count = 0;
-    
-    // Inicializar estados previos
-    for (uint8_t i = 0; i < KEY_COUNT; i++)
-        this->prevKeyState[i] = false;
+    joystick_frame_requested_at = 0;
+    joystick_frame_pending = false;
+    last_x_debug = 0xFFFF;
+    last_y_debug = 0xFFFF;
 
-    // Inicializar solo los botones GPIO (A, B, START, SELECT)
-    for (uint8_t i = KEY_A; i < KEY_COUNT; i++) {
-        gpio_init(pinId[i]);
-        gpio_set_dir(pinId[i], GPIO_IN);
-        gpio_pull_up(pinId[i]);
+    for (uint8_t i = 0; i < KEY_COUNT; ++i) {
+        prevKeyState[i] = false;
     }
-    
-    printf("[Keyboard] I2C D-Pad enabled at address 0x%02X\n", DPAD_I2C_ADDR);
+    resetDebounce();
+
+    // No se inicializan GPIO para A/B/START/SELECT: en esta revisión los
+    // ocho botones llegan por las dos escaleras ADC del joystick I2C.
+    i2c_enabled = findI2CJoystick();
+    if (i2c_enabled) {
+        printf("[Keyboard] DDP joystick enabled at address 0x%02X\n",
+               static_cast<unsigned>(joystick_i2c_addr));
+    } else {
+        printf("[Keyboard] DDP joystick not found; retrying every 2 seconds\n");
+    }
     printf("[Keyboard] Done\n");
 }
 
@@ -34,205 +66,236 @@ KeyBoard::~KeyBoard() {
 }
 
 void KeyBoard::checkKeyState(Screen *screen) {
-    // Verificar botones I2C del D-Pad (UP, DOWN, LEFT, RIGHT)
-    if (i2c_enabled) {
-        checkI2CDPad(screen);
+    checkI2CJoystick(screen);
+}
+
+bool KeyBoard::validateI2CJoystick(uint8_t address) {
+    uint16_t device_id = 0;
+    if (!readJoystickDeviceId(address, &device_id) ||
+        device_id != JOYSTICK_DEVICE_ID) {
+        return false;
     }
-    
-    // Verificar botones GPIO (A, B, START, SELECT)
-    for (uint8_t i = KEY_A; i < KEY_COUNT; i++) {
-        bool keyState = !gpio_get(pinId[i]);
-        if (this->prevKeyState[i] != keyState) {
-            if (keyState) {
-                screen->keyPressed(i);
-                // Sonido al presionar tecla
-                if (globalAudio) {
-                    globalAudio->playSelectSound();
-                }
-            } else
-                screen->keyReleased(i);
-        } else if(keyState)
-            screen->keyDown(i);
-        this->prevKeyState[i] = keyState;
+
+    JoystickFrame frame{};
+    if (!readJoystickFrame(address, &frame)) {
+        return false;
+    }
+
+    joystick_i2c_addr = address;
+    printf("[Keyboard] Joystick 0x%04X found at 0x%02X (X=%u, Y=%u)\n",
+           static_cast<unsigned>(device_id), static_cast<unsigned>(address),
+           static_cast<unsigned>(frame.x), static_cast<unsigned>(frame.y));
+    return true;
+}
+
+bool KeyBoard::findI2CJoystick() {
+    // Esta consola usa 0x53. También se prueba la dirección de fábrica y
+    // direcciones históricas que pueden seguir guardadas en otra botonera.
+    constexpr uint8_t preferred_addresses[] = {
+        JOYSTICK_I2C_ADDR, JOYSTICK_FACTORY_I2C_ADDR, 0x1A, 0x56
+    };
+
+    for (uint8_t address : preferred_addresses) {
+        if (validateI2CJoystick(address)) {
+            return true;
+        }
+    }
+
+    // El firmware acepta cualquier dirección persistida entre 0x08 y 0x77.
+    // Se exige Device ID 0x0101 para no confundir otro periférico del bus.
+    for (uint8_t address = 0x08; address < 0x78; ++address) {
+        bool already_checked = false;
+        for (uint8_t preferred : preferred_addresses) {
+            if (address == preferred) {
+                already_checked = true;
+                break;
+            }
+        }
+        if (!already_checked && validateI2CJoystick(address)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+int8_t KeyBoard::decodeLadder(uint16_t adc_value, const uint8_t key_map[4],
+                              const uint16_t slot_min[4],
+                              const uint16_t slot_max[4]) const {
+    for (uint8_t slot = 0; slot < 4; ++slot) {
+        if (adc_value >= slot_min[slot] && adc_value <= slot_max[slot]) {
+            return key_map[slot];
+        }
+    }
+    return -1;
+}
+
+void KeyBoard::updateButtonBank(Screen *screen, int8_t detected_key,
+                                int8_t &candidate_key,
+                                uint8_t &candidate_count,
+                                int8_t &stable_key, uint16_t adc_value,
+                                const char *bank_name) {
+    if (detected_key == candidate_key) {
+        if (candidate_count < JOYSTICK_DEBOUNCE_READS) {
+            ++candidate_count;
+        }
+    } else {
+        candidate_key = detected_key;
+        candidate_count = 1;
+    }
+
+    // Se filtran tanto la pulsación como la liberación. Mientras llega la
+    // segunda muestra, la tecla estable anterior continúa presionada.
+    if (candidate_count < JOYSTICK_DEBOUNCE_READS) {
+        if (stable_key >= 0) {
+            screen->keyDown(static_cast<uint8_t>(stable_key));
+        }
+        return;
+    }
+
+    if (candidate_key != stable_key) {
+        if (stable_key >= 0) {
+            const uint8_t old_key = static_cast<uint8_t>(stable_key);
+            screen->keyReleased(old_key);
+            prevKeyState[old_key] = false;
+        }
+
+        stable_key = candidate_key;
+        if (stable_key >= 0) {
+            const uint8_t new_key = static_cast<uint8_t>(stable_key);
+            printf("[Keyboard] %s pressed: key=%u ADC=%u\n", bank_name,
+                   static_cast<unsigned>(new_key),
+                   static_cast<unsigned>(adc_value));
+            screen->keyPressed(new_key);
+            prevKeyState[new_key] = true;
+            if (globalAudio) {
+                globalAudio->playSelectSound();
+            }
+        }
+    } else if (stable_key >= 0) {
+        screen->keyDown(static_cast<uint8_t>(stable_key));
     }
 }
 
-void KeyBoard::checkI2CDPad(Screen *screen) {
-    // Usar siempre el mismo sistema de tiempo
-    uint32_t now = time_us_32() / 1000;
-    
-    // Si I2C está deshabilitado, intentar reconectar cada 2 segundos
+void KeyBoard::releaseAllKeys(Screen *screen) {
+    for (uint8_t key = 0; key < KEY_COUNT; ++key) {
+        if (prevKeyState[key]) {
+            screen->keyReleased(key);
+            prevKeyState[key] = false;
+        }
+    }
+    resetDebounce();
+}
+
+void KeyBoard::resetDebounce() {
+    x_candidate_key = -1;
+    y_candidate_key = -1;
+    x_stable_key = -1;
+    y_stable_key = -1;
+    x_candidate_count = 0;
+    y_candidate_count = 0;
+}
+
+void KeyBoard::checkI2CJoystick(Screen *screen) {
+    const uint32_t now = to_ms_since_boot(get_absolute_time());
+
     if (!i2c_enabled) {
-        uint32_t elapsed = now - last_i2c_retry;
-        if (elapsed > 2000) {  // 2 segundos
-            printf("[Keyboard] Attempting I2C reconnection (elapsed: %u ms)...\n", elapsed);
-            
-            // PASO 1: Reset completo del hardware I2C
-            i2c_deinit(i2c0);
-            sleep_ms(100);
+        if (now - last_i2c_retry >= JOYSTICK_RETRY_INTERVAL_MS) {
+            printf("[Keyboard] Searching for DDP joystick...\n");
+            i2c_deinit(I2C_PORT);
+            sleep_ms(20);
             i2c_device_init();
-            sleep_ms(100);
-            
-            // PASO 2: Escanear bus I2C para verificar dispositivo
-            printf("[Keyboard] Scanning I2C bus for device 0x%02X...\n", DPAD_I2C_ADDR);
-            bool device_found = false;
-            
-            // Intentar detectar dispositivo con write de 0 bytes
-            int scan_result = i2c_write_blocking(i2c0, DPAD_I2C_ADDR, NULL, 0, false);
-            
-            if (scan_result >= 0) {
-                printf("[Keyboard] Device detected on bus!\n");
-                device_found = true;
+
+            if (findI2CJoystick()) {
+                i2c_enabled = true;
+                i2c_error_count = 0;
+                joystick_frame_pending = false;
+                printf("[Keyboard] Joystick reconnected at 0x%02X\n",
+                       static_cast<unsigned>(joystick_i2c_addr));
             } else {
-                // Intentar método alternativo: write con dummy byte
-                uint8_t dummy = 0;
-                scan_result = i2c_write_blocking(i2c0, DPAD_I2C_ADDR, &dummy, 1, false);
-                if (scan_result >= 0) {
-                    printf("[Keyboard] Device detected (alt method)!\n");
-                    device_found = true;
-                }
+                printf("[Keyboard] Joystick not found; will retry\n");
             }
-            
-            // PASO 3: Intentar lectura real si dispositivo fue detectado
-            if (device_found) {
-                sleep_ms(50);
-                uint16_t test_value = 0;
-                if (readADC_Full(DPAD_I2C_ADDR, &test_value)) {
-                    printf("[Keyboard] I2C reconnected successfully! ADC test: %d\n", test_value);
-                    i2c_error_count = 0;
-                    i2c_enabled = true;
-                    last_i2c_check = now;
-                } else {
-                    printf("[Keyboard] Device found but ADC read failed, will retry...\n");
-                }
-            } else {
-                printf("[Keyboard] Device not found (ret=%d), will retry...\n", scan_result);
-            }
-            
-            last_i2c_retry = now;
+            // Medir el intervalo desde que terminó el escaneo. Si el bus
+            // tarda en responder, no iniciar otro escaneo inmediatamente.
+            last_i2c_retry = to_ms_since_boot(get_absolute_time());
+            last_i2c_check = last_i2c_retry;
         }
         return;
     }
-    
-    // Solo verificar cada 30ms para reducir carga I2C y dar tiempo al dispositivo
-    if (now - last_i2c_check < 30) {
-        return;
-    }
-    last_i2c_check = now;
-    
-    // Si hubo muchos errores consecutivos, desactivar temporalmente
-    if (i2c_error_count > 30) {
-        if (i2c_enabled) {
-            printf("[Keyboard] I2C disabled due to errors (count: %d)\n", i2c_error_count);
-            printf("[Keyboard] Will retry reconnection in 2 seconds...\n");
-            i2c_enabled = false;
-            last_i2c_retry = now;
+
+    JoystickFrame frame{};
+    bool frame_failed = false;
+
+    if (joystick_frame_pending) {
+        if (now - joystick_frame_requested_at <
+            JOYSTICK_RESPONSE_DELAY_MS) {
+            return;
         }
-        // Liberar todos los botones del D-Pad
-        for (uint8_t i = KEY_UP; i <= KEY_RIGHT; i++) {
-            if (this->prevKeyState[i]) {
-                screen->keyReleased(i);
-                this->prevKeyState[i] = false;
-            }
-        }
-        return;
-    }
-    
-    uint16_t adc_value = 0;
-    
-    // Leer valor ADC completo (12-bit) desde la botonera I2C
-    if (readADC_Full(DPAD_I2C_ADDR, &adc_value)) {
-        i2c_success_count++;
-        
-        // Si nos recuperamos de errores, notificar
-        if (i2c_error_count > 3) {
-            printf("[Keyboard] I2C recovered after %d errors (%u successful reads)\n", 
-                   i2c_error_count, i2c_success_count);
-        }
-        // Decrementar errores gradualmente (más tolerante a errores esporádicos)
-        if (i2c_error_count > 0) i2c_error_count--;
-        
-        // Health check cada 10 segundos: Si hay muchos errores acumulados, reiniciar preventivamente
-        if ((now - last_health_check) > 10000) {
-            if (i2c_success_count < 100) {  // Menos de 100 lecturas exitosas en 10 seg es bajo
-                printf("[Keyboard] I2C health check: Low success rate, preventive restart...\n");
-                i2c_deinit(i2c0);
-                sleep_ms(50);
-                i2c_device_init();
-                sleep_ms(50);
-            }
-            last_health_check = now;
-            i2c_success_count = 0;  // Reset contador para próximo período
-        }
-        
-        // Debug: imprimir valor ADC solo cuando cambia significativamente
-        static uint16_t last_adc_debug = 0;
-        if (abs((int)adc_value - (int)last_adc_debug) > 100) {
-            printf("[Keyboard] ADC value: %d\n", adc_value);
-            last_adc_debug = adc_value;
-        }
-        
-        // Determinar qué botón está presionado basándose en rangos ADC
-        int8_t detected_btn = -1;  // -1 = NONE
-        
-        if (adc_value >= ADC_RANGE_UP_MIN && adc_value <= ADC_RANGE_UP_MAX) {
-            detected_btn = KEY_UP;
-        } else if (adc_value >= ADC_RANGE_DOWN_MIN && adc_value <= ADC_RANGE_DOWN_MAX) {
-            detected_btn = KEY_DOWN;
-        } else if (adc_value >= ADC_RANGE_LEFT_MIN && adc_value <= ADC_RANGE_LEFT_MAX) {
-            detected_btn = KEY_LEFT;
-        } else if (adc_value >= ADC_RANGE_RIGHT_MIN && adc_value <= ADC_RANGE_RIGHT_MAX) {
-            detected_btn = KEY_RIGHT;
-        }
-        
-        // Debounce: requiere 2 lecturas consecutivas iguales
-        if (detected_btn == dpad_debounce_btn) {
-            if (dpad_debounce_count < 255) dpad_debounce_count++;
-        } else {
-            dpad_debounce_btn = detected_btn;
-            dpad_debounce_count = 1;
-        }
-        
-        // Solo aplicar estado si hay al menos 2 lecturas consecutivas
-        bool keyStates[4] = {false, false, false, false};
-        if (dpad_debounce_count >= 2 && detected_btn >= 0) {
-            keyStates[detected_btn] = true;
-        }
-        
-        // Procesar cambios de estado para cada tecla direccional
-        for (uint8_t i = KEY_UP; i <= KEY_RIGHT; i++) {
-            bool keyState = keyStates[i];
-            
-            if (this->prevKeyState[i] != keyState) {
-                if (keyState) {
-                    printf("[Keyboard] DPAD pressed: %d (ADC: %d)\n", i, adc_value);
-                    screen->keyPressed(i);
-                    // Sonido al presionar tecla
-                    if (globalAudio) {
-                        globalAudio->playSelectSound();
-                    }
-                } else {
-                    screen->keyReleased(i);
-                }
-            } else if (keyState) {
-                screen->keyDown(i);
-            }
-            this->prevKeyState[i] = keyState;
-        }
+        joystick_frame_pending = false;
+        frame_failed = !receiveJoystickFrame(joystick_i2c_addr, &frame);
     } else {
-        i2c_error_count++;
-        
-        // Log solo cada ciertos errores para evitar spam
-        if (i2c_error_count == 1 || i2c_error_count == 5 || i2c_error_count % 10 == 0) {
-            printf("[Keyboard] I2C read failed (error count: %d)\n", i2c_error_count);
+        if (now - last_i2c_check < JOYSTICK_POLL_INTERVAL_MS) {
+            return;
         }
-        
-        // Si falla la lectura I2C, marcar como no presionado
-        for (uint8_t i = KEY_UP; i <= KEY_RIGHT; i++) {
-            if (this->prevKeyState[i]) {
-                screen->keyReleased(i);
-                this->prevKeyState[i] = false;
-            }
+        last_i2c_check = now;
+        if (requestJoystickFrame(joystick_i2c_addr)) {
+            joystick_frame_requested_at = now;
+            joystick_frame_pending = true;
+            return;
         }
+        frame_failed = true;
     }
+
+    if (frame_failed) {
+        if (i2c_error_count < 255) {
+            ++i2c_error_count;
+        }
+        if (i2c_error_count == 1 || i2c_error_count == 5 ||
+            i2c_error_count == JOYSTICK_MAX_ERRORS) {
+            printf("[Keyboard] Joystick frame failed (%u/%u)\n",
+                   static_cast<unsigned>(i2c_error_count),
+                   static_cast<unsigned>(JOYSTICK_MAX_ERRORS));
+        }
+
+        // No dejar una tecla pegada si el cable se desconecta. Un fallo
+        // aislado no altera el estado; tres fallos consecutivos sí liberan.
+        if (i2c_error_count == 3) {
+            releaseAllKeys(screen);
+        }
+        if (i2c_error_count >= JOYSTICK_MAX_ERRORS) {
+            i2c_enabled = false;
+            joystick_frame_pending = false;
+            last_i2c_retry = now;
+            releaseAllKeys(screen);
+            printf("[Keyboard] Joystick offline; retrying in 2 seconds\n");
+        }
+        return;
+    }
+
+    if (i2c_error_count > 0) {
+        printf("[Keyboard] I2C recovered after %u consecutive errors\n",
+               static_cast<unsigned>(i2c_error_count));
+    }
+    i2c_error_count = 0;
+
+    // Estos valores permiten ajustar por separado las ventanas de X e Y
+    // usando el monitor USB, sin inundarlo con una línea en cada frame.
+    if (last_x_debug == 0xFFFF ||
+        abs(static_cast<int>(frame.x) - static_cast<int>(last_x_debug)) > 100 ||
+        last_y_debug == 0xFFFF ||
+        abs(static_cast<int>(frame.y) - static_cast<int>(last_y_debug)) > 100) {
+        printf("[Keyboard] Joystick X=%u Y=%u\n",
+               static_cast<unsigned>(frame.x),
+               static_cast<unsigned>(frame.y));
+        last_x_debug = frame.x;
+        last_y_debug = frame.y;
+    }
+    const int8_t dpad_key = decodeLadder(frame.y, DPAD_KEY_MAP,
+                                         DPAD_SLOT_MIN, DPAD_SLOT_MAX);
+    const int8_t action_key = decodeLadder(frame.x, ACTION_KEY_MAP,
+                                           ACTION_SLOT_MIN, ACTION_SLOT_MAX);
+    updateButtonBank(screen, dpad_key, y_candidate_key, y_candidate_count,
+                     y_stable_key, frame.y, "D-pad");
+    updateButtonBank(screen, action_key, x_candidate_key, x_candidate_count,
+                     x_stable_key, frame.x, "Action");
 }

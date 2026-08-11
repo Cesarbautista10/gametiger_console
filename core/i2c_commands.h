@@ -6,6 +6,13 @@
 #define I2C_COMMANDS_H
 
 // ═══════════════════════════════════════════════════════════
+//           PROTOCOLO DDP / JOYSTICK
+// ═══════════════════════════════════════════════════════════
+#define CMD_GET_DEVICE_ID       0x00   // uint16 little-endian
+#define JOYSTICK_DEVICE_ID      0x0101
+#define CMD_JOYSTICK_FRAME      0x80   // [XH+R, XL, YH, YL], bit7=1
+
+// ═══════════════════════════════════════════════════════════
 //           COMANDOS CRÍTICOS DE SEGURIDAD (0xA0-0xAF)
 // ═══════════════════════════════════════════════════════════
 #define CMD_RELAY_OFF      0xA0   // Apagar relé PA2 y PB5
@@ -39,13 +46,13 @@
 // ═══════════════════════════════════════════════════════════
 //           COMANDOS ADC (12-bit)
 // ═══════════════════════════════════════════════════════════
-// PA0 ADC Commands
-#define CMD_ADC_PA0_HSB    0x56   // Leer ADC PA0 - HSB (bits 11-8)
-#define CMD_ADC_PA0_LSB    0x57   // Leer ADC PA0 - LSB (bits 7-0)
-
-// PA1 ADC Commands
-#define CMD_ADC_PA1_HSB    0xD8   // Leer ADC PA1 - HSB (bits 11-8)
-#define CMD_ADC_PA1_LSB    0xD9   // Leer ADC PA1 - LSB (bits 7-0)
+// Comandos heredados. En el firmware joystick corresponden físicamente a:
+// GameTiger: X = PA1/ADC_IN1 y Y = PA0/ADC_IN0.
+// Para nuevas lecturas usar la trama 0x80.
+#define CMD_ADC_PA0_HSB    0x56   // X - HSB (nombre histórico)
+#define CMD_ADC_PA0_LSB    0x57   // X - LSB (nombre histórico)
+#define CMD_ADC_PA1_HSB    0xD8   // Y - HSB (nombre histórico)
+#define CMD_ADC_PA1_LSB    0xD9   // Y - LSB (nombre histórico)
 
 // Códigos de respuesta ADC
 #define RESP_ADC_HSB       0x0D   // ADC HSB enviado (bits 11-8)

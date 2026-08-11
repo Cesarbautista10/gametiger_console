@@ -16,44 +16,79 @@
 #define KEY_SELECT 7
 #define KEY_COUNT 8
 
-// Dirección I2C de la botonera
-#define DPAD_I2C_ADDR 0x53
+// Dirección persistida configurada en la botonera de esta consola.
+// 0x20 sigue siendo la dirección de fábrica y se prueba como respaldo.
+#define JOYSTICK_I2C_ADDR         0x53
+#define JOYSTICK_FACTORY_I2C_ADDR 0x20
 
-// Rangos ADC para cada botón (12-bit ADC: 0-4095)
-// Mediciones PA0: UP=0, RIGHT=1073, LEFT=1950, DOWN=2655, NONE=4067
-// Rangos ampliados usando puntos medios para tolerar ruido ADC
-#define ADC_RANGE_UP_MIN      0
-#define ADC_RANGE_UP_MAX      500
-#define ADC_RANGE_RIGHT_MIN   600
-#define ADC_RANGE_RIGHT_MAX   1500
-#define ADC_RANGE_LEFT_MIN    1550
-#define ADC_RANGE_LEFT_MAX    2350
-#define ADC_RANGE_DOWN_MIN    2400
-#define ADC_RANGE_DOWN_MAX    3300
-#define ADC_RANGE_NONE_MIN    3500
-#define ADC_RANGE_NONE_MAX    4095
+// Ventanas iniciales de Y/PA0 (D-pad). Son independientes de X para que
+// cada escalera se pueda calibrar con sus valores reales.
+#define DPAD_ADC_SLOT_1_MIN       0
+#define DPAD_ADC_SLOT_1_MAX       500
+#define DPAD_ADC_SLOT_2_MIN       600
+#define DPAD_ADC_SLOT_2_MAX       1500
+#define DPAD_ADC_SLOT_3_MIN       1550
+#define DPAD_ADC_SLOT_3_MAX       2350
+#define DPAD_ADC_SLOT_4_MIN       2400
+#define DPAD_ADC_SLOT_4_MAX       3300
+
+// Ventanas iniciales de X/PA1 (B/START/A/SELECT). Hoy usan los valores de
+// partida del D-pad, pero quedan separadas para ajustar la segunda placa.
+#define ACTION_ADC_SLOT_1_MIN     0
+#define ACTION_ADC_SLOT_1_MAX     500
+#define ACTION_ADC_SLOT_2_MIN     600
+#define ACTION_ADC_SLOT_2_MAX     1500
+#define ACTION_ADC_SLOT_3_MIN     1550
+#define ACTION_ADC_SLOT_3_MAX     2350
+#define ACTION_ADC_SLOT_4_MIN     2400
+#define ACTION_ADC_SLOT_4_MAX     3300
+
+#define JOYSTICK_POLL_INTERVAL_MS 30
+#define JOYSTICK_RESPONSE_DELAY_MS 10
+#define JOYSTICK_RETRY_INTERVAL_MS 2000
+#define JOYSTICK_MAX_ERRORS 10
+#define JOYSTICK_DEBOUNCE_READS 2
 
 class KeyBoard
 {
 private:
-    // Pines GPIO solo para A, B, START, SELECT (los otros 4 son I2C/ADC)
-    const uint8_t pinId[KEY_COUNT] = {0, 0, 0, 0, 26, 27, 16, 17};
     bool prevKeyState[KEY_COUNT];
     bool i2c_enabled;
+    uint8_t joystick_i2c_addr;
     uint8_t i2c_error_count;
-    uint32_t i2c_success_count;      // Contador de lecturas exitosas
     uint32_t last_i2c_check;
-    uint32_t last_i2c_retry;         // Timestamp del último intento de reconexión
-    uint32_t last_health_check;      // Timestamp del último health check
-    int8_t dpad_debounce_btn;        // Botón detectado en lectura anterior (-1=NONE)
-    uint8_t dpad_debounce_count;     // Lecturas consecutivas del mismo botón
+    uint32_t last_i2c_retry;
+    uint32_t joystick_frame_requested_at;
+    bool joystick_frame_pending;
+
+    int8_t x_candidate_key;
+    int8_t y_candidate_key;
+    int8_t x_stable_key;
+    int8_t y_stable_key;
+    uint8_t x_candidate_count;
+    uint8_t y_candidate_count;
+
+    uint16_t last_x_debug;
+    uint16_t last_y_debug;
 public:
     KeyBoard();
     ~KeyBoard();
 
     void checkKeyState(Screen *screen);
+
 private:
-    void checkI2CDPad(Screen *screen);
+    void checkI2CJoystick(Screen *screen);
+    bool findI2CJoystick();
+    bool validateI2CJoystick(uint8_t address);
+    int8_t decodeLadder(uint16_t adc_value, const uint8_t key_map[4],
+                        const uint16_t slot_min[4],
+                        const uint16_t slot_max[4]) const;
+    void updateButtonBank(Screen *screen, int8_t detected_key,
+                          int8_t &candidate_key, uint8_t &candidate_count,
+                          int8_t &stable_key, uint16_t adc_value,
+                          const char *bank_name);
+    void releaseAllKeys(Screen *screen);
+    void resetDebounce();
 };
 
 #endif
