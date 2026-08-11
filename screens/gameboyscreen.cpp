@@ -447,12 +447,12 @@ void GameBoyScreen::draw(Display *display) {
         alphanumfont.drawText(display, title,
                              Vec2((DISPLAY_WIDTH - width) / 2, 82), 255, 2);
 
-        std::string resume = "A OR START RESUME";
+        std::string resume = "A OR SELECT RESUME";
         width = alphanumfont.getTextWidth(resume);
         alphanumfont.drawText(display, resume,
                              Vec2((DISPLAY_WIDTH - width) / 2, 128));
 
-        std::string exit = "B OR SELECT EXIT";
+        std::string exit = "B EXIT";
         width = alphanumfont.getTextWidth(exit);
         alphanumfont.drawText(display, exit,
                              Vec2((DISPLAY_WIDTH - width) / 2, 150));
@@ -468,14 +468,14 @@ void GameBoyScreen::keyPressed(uint8_t key) {
 
     gb_s *gb = (gb_s*)this->gb_ptr;
 
-    // SELECT is reserved for GameConsole's system pause menu. This works for
-    // every ROM, including games that do not implement their own pause state.
+    // SELECT toggles GameConsole's system pause menu. START is never consumed
+    // by the frontend, because many ROMs require it on their title screen.
     if (key == KEY_SELECT) {
         if (this->paused) {
-            if (!this->exitRequested) {
-                this->exitRequested = true;
-                this->returnCallBack(this->screenId, this->option);
-            }
+            this->paused = false;
+            this->lastFrameTimeUS = time_us_64();
+            this->frameAccumulatorUS = GAME_BOY_FRAME_US;
+            printf("[GameBoyScreen] Resumed\n");
         } else {
             this->paused = true;
             gb->direct.joypad = 0xFF;
@@ -489,7 +489,7 @@ void GameBoyScreen::keyPressed(uint8_t key) {
     }
 
     if (this->paused) {
-        if (key == KEY_A || key == KEY_START) {
+        if (key == KEY_A) {
             this->paused = false;
             this->lastFrameTimeUS = time_us_64();
             this->frameAccumulatorUS = GAME_BOY_FRAME_US;
