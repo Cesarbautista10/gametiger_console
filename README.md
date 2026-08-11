@@ -64,6 +64,28 @@ Hardware V1:
 If you're looking to contribute to the project by developing your own games for the GameTiger console, please refer to our developer guide for detailed instructions.
 [Developer's Guide](docs/dev_guide.md)
 
+## Game Boy ROMs on microSD
+
+Format the microSD card as FAT32 and place Game Boy `.gb` files in `/roms`.
+The menu supports up to 32 ROMs, from 32 KiB through 1 MiB. ROMs larger than
+256 KiB are verified and copied to a reserved flash cache the first time they
+are opened; subsequent launches of the same unchanged ROM reuse that cache.
+The first launch of a large ROM can take several seconds while this copy is
+created.
+
+Cartridge RAM is automatically stored in `/saves` shortly after a game changes
+it, and again when the emulator is paused or closed. Two raw save generations
+(`.SAV` and `.BAK`) alternate without renaming, and small `.SV0`/`.SV1`
+sidecars provide a generation number and CRC. An interrupted write therefore
+leaves the other generation intact.
+For a predictable Pokémon save name, use an 8.3 ROM filename such as
+`POKEMON.GB`; its two raw save slots will use the `POKEMON.SAV` and
+`POKEMON.BAK` base names. A standard 32 KiB `POKEMON.SAV` can be imported
+before the first firmware-managed save is created.
+
+Tap SELECT to send SELECT to the game. Hold SELECT for about one second to open
+the pause menu, then press A/SELECT to resume or B to save and exit.
+
 ## To Do
 * Add more games
 * Design Case in CAD software for 3d printing

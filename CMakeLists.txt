@@ -19,6 +19,7 @@ add_executable(${PROJECT_NAME}
     core/LoRa/sx126x_hal.cpp
     core/LoRa/sx126x.cpp
     core/framebuffer.cpp
+    core/flash_storage.cpp
     core/display.cpp
     core/image.cpp
     core/battery.cpp
@@ -58,9 +59,16 @@ target_link_libraries(${PROJECT_NAME}
     hardware_flash 
     hardware_sync
     hardware_pll
+    pico_flash
     no-OS-FatFS-SD-SDIO-SPI-RPi-Pico
 )
-target_compile_definitions(${PROJECT_NAME} PRIVATE PICO_CLOCK_AJDUST_PERI_CLOCK_WITH_SYS_CLOCK=1)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    PICO_CLOCK_AJDUST_PERI_CLOCK_WITH_SYS_CLOCK=1
+    PICO_FLASH_ASSUME_CORE1_SAFE=1
+)
+target_link_options(${PROJECT_NAME} PRIVATE
+    "LINKER:-T,${CMAKE_CURRENT_LIST_DIR}/pico_flash_guard.ld"
+)
 
 pico_enable_stdio_usb(${PROJECT_NAME} 1)
 pico_enable_stdio_uart(${PROJECT_NAME} 0)

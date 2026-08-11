@@ -2,6 +2,7 @@
 #include "core/display.h"
 #include "core/battery.h"
 #include "core/keyboard.h"
+#include "core/flash_storage.h"
 #include "core/LoRa/lora.h"
 
 #include "screens/splashscreen.h"
@@ -28,10 +29,12 @@ uint8_t newScreenId, newOption;
 void highScoreHandler(uint32_t highscore) {
     highscores[0] = 64;highscores[1] = 128;
     highscores[screen->screenId] = highscore;
-    uint32_t ints = save_and_disable_interrupts();
-    flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
-    flash_range_program(FLASH_TARGET_OFFSET, (uint8_t*)highscores, FLASH_PAGE_SIZE);
-    restore_interrupts (ints);
+    if (!flashStorageErase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE) ||
+        !flashStorageProgram(FLASH_TARGET_OFFSET,
+                             reinterpret_cast<const uint8_t *>(highscores),
+                             FLASH_PAGE_SIZE)) {
+        printf("[Main] High-score flash write failed\n");
+    }
 }
 
 void readHighScoreData() {
@@ -49,11 +52,42 @@ void backHandler(int8_t menu, uint8_t option) {
     shouldSwitchScreen = true;
 }
 
-void checkScreenSwitch() {
+void drawLoadingWindow(Display *display) {
+    constexpr int16_t windowX = 48;
+    constexpr int16_t windowY = 70;
+    constexpr int16_t windowWidth = 224;
+    constexpr int16_t windowHeight = 100;
+
+    display->fillRect(Rect2(windowX, windowY, windowWidth, windowHeight),
+                      BLACKCOLOR);
+    display->rect(Rect2(windowX, windowY, windowWidth, windowHeight),
+                  WHITECOLOR);
+    display->rect(Rect2(windowX + 3, windowY + 3,
+                        windowWidth - 6, windowHeight - 6), WHITECOLOR);
+
+    const std::string title = "CARGANDO";
+    uint16_t width = alphanumfont.getTextWidth(title, 2);
+    alphanumfont.drawText(display, title,
+                         Vec2((DISPLAY_WIDTH - width) / 2, windowY + 23),
+                         255, 2);
+
+    const std::string message = "ESPERE...";
+    width = alphanumfont.getTextWidth(message);
+    alphanumfont.drawText(display, message,
+                         Vec2((DISPLAY_WIDTH - width) / 2, windowY + 66));
+
+    // Complete the transfer before starting SD/flash work. The loading
+    // window then remains on the LCD throughout the blocking ROM load.
+    display->update();
+}
+
+void checkScreenSwitch(Display *display) {
     if(!shouldSwitchScreen)
         return;
 
     if(screen->screenId == ScreenEnum::MENUSCREEN) {
+        if(newScreenId == ScreenEnum::GAMEBOYSCREEN)
+            drawLoadingWindow(display);
         delete screen;
         if(newScreenId == ScreenEnum::SNAKESCREEN)
             screen = new SnakeScreen(*backHandler, *highScoreHandler, highscores[newScreenId], newOption);
@@ -127,7 +161,7 @@ int main(int argc, char *argv[]) {
             tight_loop_contents();
         }
         display->finishUpdate();
-        checkScreenSwitch();
+        checkScreenSwitch(display);
     }
 
     return EXIT_SUCCESS;
